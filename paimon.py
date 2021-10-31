@@ -72,16 +72,15 @@ if __name__ == '__main__':
 
         setup_handlers(dispatcher, updater.job_queue)
 
-        # updater.start_webhook(listen=config['listen'],
-        #                       port=config['port'],
-        #                       url_path=config['apikey'],
-        #                       key=config['key'],
-        #                       cert=config['cert'],
-        #                       webhook_url=(f"https://"
-        #                                    f"{config['ip']}:"
-        #                                    f"{config['port']}/"
-        #                                    f"{config['apikey']}"))
-        updater.start_polling()
+        updater.start_webhook(listen=config['listen'],
+                              port=config['port'],
+                              url_path=config['apikey'],
+                              key=config['key'],
+                              cert=config['cert'],
+                              webhook_url=(f"https://"
+                                           f"{config['ip']}:"
+                                           f"{config['port']}/"
+                                           f"{config['apikey']}"))
         updater.idle()
     else:
         print("File .config not found.")
