@@ -1,0 +1,10 @@
+apikey=your_bot_token
+admin=your_telegram_id
+listen=0.0.0.0
+ip=your_server_ip
+port=88
+key=private_key.key
+cert=certificate.pem
+ltoken=your_ltoken
+ltuid=your_ltuid
+uid=your_ingame_uid
