@@ -11,7 +11,7 @@ import paimon
 
 
 ADMIN = None
-STATE = None
+STATE = ut.CMD.NOP
 HELP = (
     "Hello Traveler, use the following commands to interact with me:"
     "\n\n"
@@ -94,12 +94,12 @@ def cancel(update, context):
     uid = ut.uid(update)
     if allowed(uid):
         if STATE != ut.CMD.NOP:
-            msg = (f"The command <code>{STATE[uid].value}</code> "
+            msg = (f"The command <code>{STATE.value}</code> "
                    f"has been cancelled. Anything else I can do for you?"
                    f"\n\n"
                    f"Send /help for a list of commands.")
+            _state()
         else:
             msg = ("No active command to cancel. "
                    "I wasn't doing anything anyway.\nZzzzz...")
-            ut.send(update, msg)
-        _state()
+        ut.send(update, msg)
