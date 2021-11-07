@@ -11,7 +11,6 @@ import paimon
 
 
 ADMIN = None
-UID = None
 STATE = None
 HELP = (
     "Hello Traveler, use the following commands to interact with me:"
@@ -38,12 +37,10 @@ def _state(state=ut.CMD.NOP):
 
 
 def allowed(uid):
-    global ADMIN, UID
+    global ADMIN
     if ADMIN is None:
-        cfg = paimon.load_config()
-        ADMIN = int(cfg['admin'])
-        UID = int(cfg['uid'])
-        gs.set_cookie(ltoken=cfg['ltoken'], ltuid=cfg['ltuid'])
+        paimon._load_config()
+        ADMIN = int(paimon.CONFIG['admin'])
     return uid == ADMIN
 
 
@@ -76,10 +73,21 @@ def redeem(update, context):
         else:
             msg = "Tell me the gift code to redeem:"
             _state(ut.CMD.GIFT)
+        ut.send(update, msg)
 
 
 def text(update, context):
-    pass
+    uid = ut.uid(update)
+    if allowed(uid):
+        msg = "❗ Send only one argument."
+        args = update.message.text.split()
+        if len(args) == 1:
+            if STATE == ut.CMD.GIFT:
+                msg = "❗ Argument must be a valid code."
+                _redeem(args[0], msg)
+            else:
+                _state(uid)
+        ut.send(update, msg)
 
 
 def cancel(update, context):

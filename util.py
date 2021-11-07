@@ -5,8 +5,11 @@
 
 from telegram.error import BadRequest
 from telegram import ParseMode
+import genshinstats as gs
 from enum import Enum
 import traceback
+import datetime
+import pytz
 import time
 import re
 
@@ -17,16 +20,18 @@ CHAR = re.compile(r"Side_(.*)\.png")
 class CMD(Enum):
     NOP = ''
     GIFT = 'redeem'
-    AUTH = 'auth'
 
 
 def uid(update):
     return update.effective_message.chat.id
 
 
-def send(update, msg, quote=True, reply_markup=None):
-    update.message.reply_html(msg, quote=quote, reply_markup=reply_markup,
-                              disable_web_page_preview=True)
+def send(update, msg, button=False, quote=True, reply_markup=None):
+    if button:
+        update.callback_query.message.chat.send_message(msg)
+    else:
+        update.message.reply_html(msg, quote=quote, reply_markup=reply_markup,
+                                  disable_web_page_preview=True)
 
 
 def send_bot(bot, uid, msg, reply_markup=None):
@@ -58,3 +63,14 @@ def fmt_exp(expeditions):
                   else 'Finished')
         char_info.append(f"    - {name} => <code>{remain}</code>\n")
     return "".join(char_info)
+
+
+def daily_callback(context):
+    reward = gs.claim_daily_reward()
+    if reward is None:
+        print("Could not claim daily reward")
+
+
+def daily_checkin(queue, uid):
+    midnight = datetime.time(minute=10, tzinfo=pytz.timezone('Asia/Shanghai'))
+    queue.run_daily(daily_callback, midnight, name='checkin')

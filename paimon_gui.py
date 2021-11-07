@@ -5,19 +5,10 @@
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
-import paimon_cli as cli
+import genshinstats as gs
+import threads as th
 import util as ut
-
-
-# STATE = None
-
-
-# def _state(uid, state, value):
-#     if uid not in STATE:
-#         STATE[uid] = {}
-
-#     if state not in STATE[uid]:
-#         STATE[uid][state] = value
+import paimon
 
 
 def _answer(update, msg=None):
@@ -44,8 +35,9 @@ def main_menu(update):
 
 
 def notes_menu(update):
-    notes = cli.gs.get_notes(cli.UID)
+    notes = gs.get_notes(paimon.CONFIG['uid'])
     _answer(update)
+    th.new_thread(update, notes['until_resin_limit'])
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
            f"({ut.fmt_sec(notes['until_resin_limit'])})</code>\n"

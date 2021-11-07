@@ -7,6 +7,7 @@
 
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
+import genshinstats as gs
 import paimon_cli as cli
 import paimon_gui as gui
 import util as ut
@@ -14,11 +15,15 @@ import logging
 import os
 
 
-def load_config():
-    with open(".config", 'r') as f:
-        config = {k: v for k, v in
-                  [line.split('=') for line in f.read().splitlines()]}
-    return config
+CONFIG = None
+
+
+def _load_config():
+    global CONFIG
+    if CONFIG is None:
+        with open(".config", 'r') as f:
+            CONFIG = {k: v for k, v in
+                      [line.split('=') for line in f.read().splitlines()]}
 
 
 def button_handler(update, context):
@@ -48,6 +53,10 @@ def setup_handlers(dispatch, job_queue):
                                   filters=~Filters.update.edited_message)
     dispatch.add_handler(menu_handler)
 
+    redeem_handler = CommandHandler('redeem', cli.redeem,
+                                    filters=~Filters.update.edited_message)
+    dispatch.add_handler(redeem_handler)
+
     cancel_handler = CommandHandler('cancel', cli.cancel,
                                     filters=~Filters.update.edited_message)
     dispatch.add_handler(cancel_handler)
@@ -65,22 +74,27 @@ if __name__ == '__main__':
                         level=logging.INFO)
 
     if os.path.isfile('.config'):
-        config = load_config()
+        _load_config()
+        gs.set_cookie(ltoken=CONFIG['ltoken'],
+                      ltuid=CONFIG['ltuid'],
+                      account_id=CONFIG['ltuid'],
+                      cookie_token=CONFIG['ctoken'])
 
-        updater = Updater(token=config['apikey'], use_context=True)
+        updater = Updater(token=CONFIG['apikey'], use_context=True)
         dispatcher = updater.dispatcher
 
+        ut.daily_checkin(updater.job_queue, CONFIG['uid'])
         setup_handlers(dispatcher, updater.job_queue)
 
-        updater.start_webhook(listen=config['listen'],
-                              port=config['port'],
-                              url_path=config['apikey'],
-                              key=config['key'],
-                              cert=config['cert'],
+        updater.start_webhook(listen=CONFIG['listen'],
+                              port=CONFIG['port'],
+                              url_path=CONFIG['apikey'],
+                              key=CONFIG['key'],
+                              cert=CONFIG['cert'],
                               webhook_url=(f"https://"
-                                           f"{config['ip']}:"
-                                           f"{config['port']}/"
-                                           f"{config['apikey']}"))
+                                           f"{CONFIG['ip']}:"
+                                           f"{CONFIG['port']}/"
+                                           f"{CONFIG['apikey']}"))
         updater.idle()
     else:
-        print("File .config not found.")
+        print("File .CONFIG not found.")
