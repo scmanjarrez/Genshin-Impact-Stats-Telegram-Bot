@@ -34,7 +34,8 @@ def main_menu(update):
     resp(update, "Menu", reply_markup=InlineKeyboardMarkup(kb))
 
 
-def notes_menu(update):
+def notes_menu(update, context):
+    ut.autoupdate_notes(context.job_queue, update)
     notes = gs.get_notes(paimon.CONFIG['uid'])
     _answer(update)
     th.new_thread(update, notes['until_resin_limit'])

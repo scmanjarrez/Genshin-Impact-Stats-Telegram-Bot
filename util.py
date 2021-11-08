@@ -6,6 +6,7 @@
 from telegram.error import BadRequest
 from telegram import ParseMode
 import genshinstats as gs
+import paimon_gui as gui
 from enum import Enum
 import traceback
 import datetime
@@ -15,6 +16,7 @@ import re
 
 
 CHAR = re.compile(r"Side_(.*)\.png")
+UPD_NOTES = 4 * 60 * 60  # update every 4 hours
 
 
 class CMD(Enum):
@@ -65,6 +67,15 @@ def fmt_exp(expeditions):
     return "".join(char_info)
 
 
+def _remove_job(queue, name):
+    current_jobs = queue.get_jobs_by_name(name)
+    if current_jobs:
+        for job in current_jobs:
+            job.schedule_removal()
+    else:
+        print(f"No job named {name}")
+
+
 def daily_callback(context):
     reward = gs.claim_daily_reward()
     if reward is None:
@@ -73,4 +84,15 @@ def daily_callback(context):
 
 def daily_checkin(queue, uid):
     midnight = datetime.time(minute=10, tzinfo=pytz.timezone('Asia/Shanghai'))
-    queue.run_daily(daily_callback, midnight, name='checkin')
+    queue.run_daily(daily_callback, midnight, name='checkin_claim')
+
+
+def update_notes(context):
+    update = context.job.context
+    gui.notes_menu(update, context)
+
+
+def autoupdate_notes(queue, update):
+    _remove_job(queue, 'notes_update')
+    queue.run_once(update_notes, UPD_NOTES,
+                   context=update, name='notes_update')

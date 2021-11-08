@@ -33,7 +33,7 @@ def button_handler(update, context):
         if query.data == 'main_menu':
             gui.main_menu(update)
         elif query.data == 'notes_menu':
-            gui.notes_menu(update)
+            gui.notes_menu(update, context)
         elif query.data == 'abyss_menu':
             gui.abyss_menu(update)
         elif query.data == 'settings_menu':
