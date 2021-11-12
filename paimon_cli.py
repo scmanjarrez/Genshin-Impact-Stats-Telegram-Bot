@@ -61,7 +61,8 @@ def _redeem(code, msg):
         gs.redeem_code(code)
         msg = "Coded redeemed successfully."
     except err.CodeRedeemException:
-        return msg
+        pass
+    return msg
 
 
 def redeem(update, context):
