@@ -4,8 +4,9 @@
 # This work is licensed under the terms of the MIT license.
 
 from threading import Thread, Event
-# import genshinstats as gs
+import paimon_gui as gui
 import util as ut
+
 
 THREAD = None
 WARN_THLD = 10 * 8 * 60  # first warn: 10 resin less than cap (150)
@@ -33,14 +34,20 @@ class NotifierThread(Thread):
     def notify(self, msg):
         ut.send(self.update, msg, button=True)
 
-    def run(self):
+    def timers(self):
         prewarn = self.timer > WARN_THLD
         warn = self.timer - WARN_THLD if prewarn else self.timer
+        return prewarn, warn
+
+    def run(self):
+        prewarn, warn = self.timers()
         while not self.flag.wait(warn):
             if prewarn:
-                self.notify("❗ Hey, your resin is 150!")
-                warn = WARN_THLD
-                prewarn = False
+                notify, timer = gui.update_notes(self.update)
+                if notify:
+                    self.notify("❗ Hey, your resin is 150!")
+                self.timer = int(timer)
+                prewarn, warn = self.timers()
             else:
                 self.notify("‼ Hey, you have hit the resin cap!")
                 self.flag.set()

@@ -59,6 +59,29 @@ def notes_menu(update, context):
     ut.edit(update, msg, InlineKeyboardMarkup(kb))
 
 
+def update_notes(update):
+    notes = gs.get_notes(paimon.CONFIG['uid'])
+    claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
+    msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
+           f"({ut.fmt_sec(notes['until_resin_limit'])})</code>\n"
+
+           f"<b>Commissions:</b> "
+           f"<code>{notes['completed_commissions']}/"
+           f"{notes['total_commissions']} ({claimed})</code>\n"
+
+           f"<b>Weekly Boss Discounts:</b> "
+           f"<code>{notes['remaining_boss_discounts']}/"
+           f"{notes['max_boss_discounts']}</code>\n"
+
+           f"<b>Expeditions:</b>\n"
+           f"{ut.fmt_exp(notes['expeditions'])}\n"
+           )
+    kb = [button([("🔃 Update 🔃", 'notes_menu')]),
+          button([("« Back to Menu", 'main_menu')])]
+    ut.edit(update, msg, InlineKeyboardMarkup(kb))
+    return notes['resin'] >= 150, notes['until_resin_limit']
+
+
 def abyss_menu(update):
     _answer(update, "Not yet implemented.")
 
