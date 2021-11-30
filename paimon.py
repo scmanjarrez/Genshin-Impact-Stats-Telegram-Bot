@@ -21,7 +21,7 @@ CONFIG = None
 def _load_config():
     global CONFIG
     if CONFIG is None:
-        with open(".config", 'r') as f:
+        with open(ut.CONF_FILE, 'r') as f:
             CONFIG = {k: v for k, v in
                       [line.split('=') for line in f.read().splitlines()]}
 
@@ -36,8 +36,6 @@ def button_handler(update, context):
             gui.notes_menu(update, context)
         elif query.data == 'abyss_menu':
             gui.abyss_menu(update)
-        elif query.data == 'settings_menu':
-            gui.settings_menu(update)
 
 
 def setup_handlers(dispatch, job_queue):
@@ -73,7 +71,7 @@ if __name__ == '__main__':
                                 '%(levelname)s - %(message)s'),
                         level=logging.INFO)
 
-    if os.path.isfile('.config'):
+    if os.path.isfile(ut.CONF_FILE):
         _load_config()
         gs.set_cookie(ltoken=CONFIG['ltoken'],
                       ltuid=CONFIG['ltuid'],

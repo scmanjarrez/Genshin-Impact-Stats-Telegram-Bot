@@ -26,8 +26,7 @@ def button(buttons):
 def main_menu(update):
     _answer(update)
     kb = [button([("🗒 Daily Notes 🗒", 'notes_menu')]),
-          button([("🌟 Abyss 🌟", 'abyss_menu')]),
-          button([("⚙ Settings ⚙", 'settings_menu')])]
+          button([("✨ Abyss ✨", 'abyss_menu')])]
     resp = ut.send
     if update.callback_query is not None:
         resp = ut.edit
@@ -41,7 +40,7 @@ def notes_menu(update, context):
     th.new_thread(update, notes['until_resin_limit'])
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
-           f"({ut.fmt_sec(notes['until_resin_limit'])})</code>\n"
+           f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
 
            f"<b>Commissions:</b> "
            f"<code>{notes['completed_commissions']}/"
@@ -52,8 +51,9 @@ def notes_menu(update, context):
            f"{notes['max_boss_discounts']}</code>\n"
 
            f"<b>Expeditions:</b>\n"
-           f"{ut.fmt_exp(notes['expeditions'])}\n"
-           )
+           f"{ut.fmt_expeditions(notes['expeditions'])}\n"
+
+           f"<code>Last updated: {ut.last_updated()}</code>")
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
     ut.edit(update, msg, InlineKeyboardMarkup(kb))
@@ -63,7 +63,7 @@ def update_notes(update):
     notes = gs.get_notes(paimon.CONFIG['uid'])
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
-           f"({ut.fmt_sec(notes['until_resin_limit'])})</code>\n"
+           f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
 
            f"<b>Commissions:</b> "
            f"<code>{notes['completed_commissions']}/"
@@ -74,8 +74,9 @@ def update_notes(update):
            f"{notes['max_boss_discounts']}</code>\n"
 
            f"<b>Expeditions:</b>\n"
-           f"{ut.fmt_exp(notes['expeditions'])}\n"
-           )
+           f"{ut.fmt_expeditions(notes['expeditions'])}\n"
+
+           f"<code>Last updated: {ut.last_updated()}</code>")
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
     ut.edit(update, msg, InlineKeyboardMarkup(kb))
@@ -83,8 +84,16 @@ def update_notes(update):
 
 
 def abyss_menu(update):
-    _answer(update, "Not yet implemented.")
+    abyss = gs.get_spiral_abyss(paimon.CONFIG['uid'])
+    _answer(update)
+    msg = (f"<b>Deepest Descent:</b> "
+           f"<code>{abyss['stats']['max_floor']}</code>\n"
 
+           f"<b>Battles Fought:</b> <code>{abyss['stats']['total_battles']} "
+           f"({abyss['stats']['total_stars']}*)</code>\n"
 
-def settings_menu(update):
-    _answer(update, "Not yet implemented.")
+           f"<b>Floors:</b>\n"
+           f"{ut.fmt_floors(abyss['floors'])}")
+    kb = [button([("🔃 Update 🔃", 'abyss_menu')]),
+          button([("« Back to Menu", 'main_menu')])]
+    ut.edit(update, msg, InlineKeyboardMarkup(kb))

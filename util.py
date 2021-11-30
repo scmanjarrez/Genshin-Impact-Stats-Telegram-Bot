@@ -10,13 +10,15 @@ import paimon_gui as gui
 from enum import Enum
 import traceback
 import datetime
+import paimon
 import pytz
 import time
 import re
 
 
-CHAR = re.compile(r"Side_(.*)\.png")
+CHAR = re.compile(r'Side_(.*)\.png')
 UPD_NOTES = 4 * 60 * 60  # update every 4 hours
+CONF_FILE = '.config'
 
 
 class CMD(Enum):
@@ -53,18 +55,35 @@ def edit(update, msg, reply_markup):
             traceback.print_stack()
 
 
-def fmt_sec(seconds):
+def fmt_seconds(seconds):
     return time.strftime("%H:%M:%S", time.gmtime(int(seconds)))
 
 
-def fmt_exp(expeditions):
+def fmt_expeditions(expeditions):
     char_info = []
     for exp in expeditions:
         name = re.search(CHAR, exp['icon']).group(1)
-        remain = (fmt_sec(exp['remaining_time']) if exp['remaining_time'] != 0
-                  else 'Finished')
+        remain = (fmt_seconds(exp['remaining_time'])
+                  if exp['remaining_time'] != 0 else 'Finished')
         char_info.append(f"    - {name} => <code>{remain}</code>\n")
     return "".join(char_info)
+
+
+def fmt_floors(floors):
+    def parse_characters(battles):
+        return " | ".join(
+            [", ".join(
+                [char['name'] for char in chamber['characters']]
+            ) for chamber in battles])
+    floor_info = []
+    for fl in floors:
+        for ch in fl['chambers']:
+            floor_info.append(f"    - <b>{fl['floor']}-{ch['chamber']} "
+                              f"({ch['stars']}/{ch['max_stars']}*):</b> "
+                              f"<code>{parse_characters(ch['battles'])}"
+                              f"</code>\n")
+        floor_info.append("\n")
+    return "".join(floor_info)
 
 
 def _remove_job(queue, name):
@@ -96,3 +115,8 @@ def autoupdate_notes(queue, update):
     _remove_job(queue, 'notes_update')
     queue.run_once(update_notes, UPD_NOTES,
                    context=update, name='notes_update')
+
+
+def last_updated():
+    return datetime.datetime.now(
+        pytz.timezone(paimon.CONFIG['timezone'])).strftime('%Y/%m/%d %H:%M:%S')
