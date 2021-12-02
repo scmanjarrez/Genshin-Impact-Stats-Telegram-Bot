@@ -4,6 +4,7 @@
 # This work is licensed under the terms of the MIT license.
 
 from threading import Thread, Event
+
 import paimon_gui as gui
 import util as ut
 

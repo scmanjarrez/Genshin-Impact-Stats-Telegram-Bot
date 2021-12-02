@@ -5,10 +5,10 @@
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
+
 import genshinstats as gs
 import threads as th
 import util as ut
-import paimon
 
 
 def _answer(update, msg=None):
@@ -35,7 +35,7 @@ def main_menu(update):
 
 def notes_menu(update, context):
     ut.autoupdate_notes(context.job_queue, update)
-    notes = gs.get_notes(paimon.CONFIG['uid'])
+    notes = gs.get_notes(ut.config('uid'))
     _answer(update)
     th.new_thread(update, notes['until_resin_limit'])
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
@@ -60,7 +60,7 @@ def notes_menu(update, context):
 
 
 def update_notes(update):
-    notes = gs.get_notes(paimon.CONFIG['uid'])
+    notes = gs.get_notes(ut.config('uid'))
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
            f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
@@ -84,7 +84,7 @@ def update_notes(update):
 
 
 def abyss_menu(update):
-    abyss = gs.get_spiral_abyss(paimon.CONFIG['uid'])
+    abyss = gs.get_spiral_abyss(ut.config('uid'))
     _answer(update)
     msg = (f"<b>Deepest Descent:</b> "
            f"<code>{abyss['stats']['max_floor']}</code>\n"

@@ -7,23 +7,13 @@
 
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
+
 import genshinstats as gs
 import paimon_cli as cli
 import paimon_gui as gui
 import util as ut
 import logging
 import os
-
-
-CONFIG = None
-
-
-def _load_config():
-    global CONFIG
-    if CONFIG is None:
-        with open(ut.CONF_FILE, 'r') as f:
-            CONFIG = {k: v for k, v in
-                      [line.split('=') for line in f.read().splitlines()]}
 
 
 def button_handler(update, context):
@@ -72,27 +62,25 @@ if __name__ == '__main__':
                         level=logging.INFO)
 
     if os.path.isfile(ut.CONF_FILE):
-        _load_config()
-        gs.set_cookie(ltoken=CONFIG['ltoken'],
-                      ltuid=CONFIG['ltuid'],
-                      account_id=CONFIG['ltuid'],
-                      cookie_token=CONFIG['ctoken'])
+        gs.set_cookie(ltoken=ut.config('ltoken'),
+                      ltuid=ut.config('ltuid'),
+                      account_id=ut.config('ltuid'),
+                      cookie_token=ut.config('ctoken'))
 
-        updater = Updater(token=CONFIG['apikey'], use_context=True)
+        updater = Updater(token=ut.config('bot'), use_context=True)
         dispatcher = updater.dispatcher
 
-        ut.daily_checkin(updater.job_queue, CONFIG['uid'])
+        ut.daily_checkin(updater.job_queue, ut.config('uid'))
         setup_handlers(dispatcher, updater.job_queue)
 
-        updater.start_webhook(listen=CONFIG['listen'],
-                              port=CONFIG['port'],
-                              url_path=CONFIG['apikey'],
-                              key=CONFIG['key'],
-                              cert=CONFIG['cert'],
+        updater.start_webhook(listen=ut.config('listen'),
+                              port=ut.config('port'),
+                              url_path=ut.config('bot'),
+                              cert=ut.config('cert'),
                               webhook_url=(f"https://"
-                                           f"{CONFIG['ip']}:"
-                                           f"{CONFIG['port']}/"
-                                           f"{CONFIG['apikey']}"))
+                                           f"{ut.config('ip')}/"
+                                           f"{ut.config('bot')}")
+                              )
         updater.idle()
     else:
-        print("File .CONFIG not found.")
+        print(f"File {ut.CONF_FILE} not found.")

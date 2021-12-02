@@ -1,12 +1,16 @@
-apikey=your_bot_token
-admin=your_telegram_id
-listen=0.0.0.0
-ip=your_server_ip
-port=88
-key=private_key.key
-cert=certificate.pem
-ltoken=your_ltoken (hoyolab)
-ltuid=your_ltuid (hoyolab)
-ctoken=your_cookie_token (redeem codes site)
-uid=your_ingame_uid
-timezone=your_timezone
+[webhook]
+bot = bot_token
+ip = public_ip
+listen = local_listen_address
+port = local_bind_port
+cert = certificate_pem
+
+[genshin]
+ltoken = hoyolab_ltoken
+ltuid = hoyolab_ltuid
+ctoken = mihoyo_cookie_token (genshin.mihoyo.com/en/gift)
+uid = ingame_uid
+
+[settings]
+admin = telegram_uid
+timezone = your_timezone

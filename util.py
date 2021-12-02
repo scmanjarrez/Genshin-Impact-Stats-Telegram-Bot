@@ -5,12 +5,13 @@
 
 from telegram.error import BadRequest
 from telegram import ParseMode
+from enum import Enum
+
+import configparser as cfg
 import genshinstats as gs
 import paimon_gui as gui
-from enum import Enum
 import traceback
 import datetime
-import paimon
 import pytz
 import time
 import re
@@ -19,11 +20,26 @@ import re
 CHAR = re.compile(r'Side_(.*)\.png')
 UPD_NOTES = 4 * 60 * 60  # update every 4 hours
 CONF_FILE = '.config'
+_CONFIG = None
 
 
 class CMD(Enum):
     NOP = ''
     GIFT = 'redeem'
+
+
+def _load_config():
+    global _CONFIG
+    if _CONFIG is None:
+        parser = cfg.ConfigParser()
+        parser.read(CONF_FILE)
+        _CONFIG = {k: v for section in parser.sections()
+                   for k, v in parser[section].items()}
+
+
+def config(key):
+    _load_config()
+    return _CONFIG[key]
 
 
 def uid(update):
@@ -119,4 +135,4 @@ def autoupdate_notes(queue, update):
 
 def last_updated():
     return datetime.datetime.now(
-        pytz.timezone(paimon.CONFIG['timezone'])).strftime('%Y/%m/%d %H:%M:%S')
+        pytz.timezone(config('timezone'))).strftime('%Y/%m/%d %H:%M:%S')

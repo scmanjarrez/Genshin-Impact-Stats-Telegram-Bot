@@ -7,10 +7,8 @@ import genshinstats.errors as err
 import genshinstats as gs
 import paimon_gui as gui
 import util as ut
-import paimon
 
 
-ADMIN = None
 STATE = ut.CMD.NOP
 HELP = (
     "Hello Traveler, use the following commands to interact with me:"
@@ -37,11 +35,7 @@ def _state(state=ut.CMD.NOP):
 
 
 def allowed(uid):
-    global ADMIN
-    if ADMIN is None:
-        paimon._load_config()
-        ADMIN = int(paimon.CONFIG['admin'])
-    return uid == ADMIN
+    return uid == int(ut.config('admin'))
 
 
 def bot_help(update, context):
