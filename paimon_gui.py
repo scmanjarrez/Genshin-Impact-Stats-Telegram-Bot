@@ -80,7 +80,7 @@ def update_notes(update):
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
     ut.edit(update, msg, InlineKeyboardMarkup(kb))
-    return notes['resin'] >= 150, notes['until_resin_limit']
+    return int(notes['until_resin_limit'])
 
 
 def abyss_menu(update):

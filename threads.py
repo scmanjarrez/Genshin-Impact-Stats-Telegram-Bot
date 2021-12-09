@@ -35,20 +35,14 @@ class NotifierThread(Thread):
     def notify(self, msg):
         ut.send(self.update, msg, button=True)
 
-    def timers(self):
-        prewarn = self.timer > WARN_THLD
-        warn = self.timer - WARN_THLD if prewarn else self.timer
-        return prewarn, warn
-
     def run(self):
-        prewarn, warn = self.timers()
+        warn = self.timer - WARN_THLD if self.timer > WARN_THLD else self.timer
         while not self.flag.wait(warn):
-            if prewarn:
-                notify, timer = gui.update_notes(self.update)
-                if notify:
-                    self.notify("❗ Hey, your resin is 150!")
-                self.timer = int(timer)
-                prewarn, warn = self.timers()
-            else:
-                self.notify("‼ Hey, you have hit the resin cap!")
+            timer = gui.update_notes(self.update)
+            if timer == 0:
+                self.notify("‼ Hey, your resin has reached the cap!")
                 self.flag.set()
+            else:
+                if timer <= WARN_THLD:
+                    self.notify("❗ Hey, your resin is over 150!")
+                warn = timer
