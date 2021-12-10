@@ -50,21 +50,21 @@ def menu(update, context):
         gui.main_menu(update)
 
 
-def _redeem(code, msg):
+def _redeem(code):
     try:
         gs.redeem_code(code)
-        msg = "Coded redeemed successfully."
-    except err.CodeRedeemException:
-        pass
+    except err.GenshinStatsException as e:
+        msg = e.msg
+    else:
+        msg = "Code redeemed successfully."
     return msg
 
 
 def redeem(update, context):
     uid = ut.uid(update)
     if allowed(uid):
-        msg = "❗ Argument must be a valid code."
         if context.args:
-            msg = _redeem(context.args[0], msg)
+            msg = _redeem(context.args[0])
         else:
             msg = "Tell me the gift code to redeem:"
             _state(ut.CMD.GIFT)
@@ -78,8 +78,7 @@ def text(update, context):
         args = update.message.text.split()
         if len(args) == 1:
             if STATE == ut.CMD.GIFT:
-                msg = "❗ Argument must be a valid code."
-                _redeem(args[0], msg)
+                msg = _redeem(args[0])
             else:
                 _state(uid)
         ut.send(update, msg)
