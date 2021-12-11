@@ -107,30 +107,28 @@ def _remove_job(queue, name):
     if current_jobs:
         for job in current_jobs:
             job.schedule_removal()
-    else:
-        print(f"No job named {name}")
 
 
 def daily_callback(context):
     reward = gs.claim_daily_reward()
     if reward is None:
-        print("Could not claim daily reward")
+        send_bot(context.bot, config('admin'), "Could not claim daily reward.")
 
 
 def daily_checkin(queue, uid):
     midnight = datetime.time(minute=10, tzinfo=pytz.timezone('Asia/Shanghai'))
-    queue.run_daily(daily_callback, midnight, name='checkin_claim')
+    queue.run_daily(daily_callback, midnight, name='daily_checkin')
 
 
 def update_notes(context):
     update = context.job.context
-    gui.notes_menu(update, context)
+    gui.update_notes(update)
 
 
 def autoupdate_notes(queue, update):
-    _remove_job(queue, 'notes_update')
-    queue.run_once(update_notes, UPD_NOTES,
-                   context=update, name='notes_update')
+    _remove_job(queue, 'autoupdate_notes')
+    queue.run_repeating(update_notes, UPD_NOTES,
+                        context=update, name='autoupdate_notes')
 
 
 def last_updated():

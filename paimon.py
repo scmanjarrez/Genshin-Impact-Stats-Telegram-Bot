@@ -69,9 +69,9 @@ if __name__ == '__main__':
 
         updater = Updater(token=ut.config('bot'), use_context=True)
         dispatcher = updater.dispatcher
+        setup_handlers(dispatcher, updater.job_queue)
 
         ut.daily_checkin(updater.job_queue, ut.config('uid'))
-        setup_handlers(dispatcher, updater.job_queue)
 
         updater.start_webhook(listen=ut.config('listen'),
                               port=ut.config('port'),
