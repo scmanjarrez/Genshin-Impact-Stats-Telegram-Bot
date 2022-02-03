@@ -26,7 +26,7 @@ def button(buttons):
 def main_menu(update):
     _answer(update)
     kb = [button([("🗒 Daily Notes 🗒", 'notes_menu')]),
-          button([("✨ Abyss ✨", 'abyss_menu')])]
+          button([("✨ Abyss ✨", 'abyss_seasons_menu')])]
     resp = ut.send
     if update.callback_query is not None:
         resp = ut.edit
@@ -83,17 +83,56 @@ def update_notes(update):
     return int(notes['until_resin_limit'])
 
 
-def abyss_menu(update):
-    abyss = gs.get_spiral_abyss(ut.config('uid'))
+def abyss_seasons_menu(update):
     _answer(update)
-    msg = (f"<b>Deepest Descent:</b> "
+    kb = [button([("Current", 'abyss_floors_menu'),
+                  ("Previous", 'abyss_floors_menu_previous')]),
+          button([("« Back to Menu", 'main_menu')])]
+    if update.callback_query is not None:
+        resp = ut.edit
+    resp(update, "Abyss Seasons", reply_markup=InlineKeyboardMarkup(kb))
+
+
+def abyss_floors_menu(update, previous):
+    _answer(update)
+    suffix = ''
+    season = "current"
+    if previous:
+        suffix = '_previous'
+        season = "previous"
+    kb = [button([("All", f'abyss_menu{suffix}_all')]),
+          button([("9", f'abyss_menu{suffix}_9'),
+                  ("10", f'abyss_menu{suffix}_10'),
+                  ("11", f'abyss_menu{suffix}_11'),
+                  ("12", f'abyss_menu{suffix}_12')]),
+          button([("« Back to Seasons", 'abyss_seasons_menu'),
+                  ("« Back to Menu", 'main_menu')])]
+    if update.callback_query is not None:
+        resp = ut.edit
+    resp(update, f"Abyss Floors ({season})",
+         reply_markup=InlineKeyboardMarkup(kb))
+
+
+def abyss_menu(update, previous, floor):
+    abyss = gs.get_spiral_abyss(ut.config('uid'), previous)
+    _answer(update)
+    suffix = ''
+    season = "Current Season"
+    if previous:
+        suffix = '_previous'
+        season = "Previous Season"
+    msg = (f"<b>⚜ {season} ⚜\n\n</b>"
+
+           f"<b>Deepest Descent:</b> "
            f"<code>{abyss['stats']['max_floor']}</code>\n"
 
            f"<b>Battles Fought:</b> <code>{abyss['stats']['total_battles']} "
            f"({abyss['stats']['total_stars']}*)</code>\n"
 
            f"<b>Floors:</b>\n"
-           f"{ut.fmt_floors(abyss['floors'])}")
-    kb = [button([("🔃 Update 🔃", 'abyss_menu')]),
-          button([("« Back to Menu", 'main_menu')])]
+           f"{ut.fmt_floors(abyss['floors'], floor)}")
+    kb = [button([("🔃 Update 🔃", f'abyss_menu{suffix}_{floor}')]),
+          button([("« Back to Floors", 'abyss_floors_menu{prefix}'),
+                  ("« Back to Seasons", 'abyss_seasons_menu'),
+                  ("« Back to Menu", 'main_menu')])]
     ut.edit(update, msg, InlineKeyboardMarkup(kb))

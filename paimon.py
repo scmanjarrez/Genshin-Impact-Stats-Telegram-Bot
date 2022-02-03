@@ -24,8 +24,14 @@ def button_handler(update, context):
             gui.main_menu(update)
         elif query.data == 'notes_menu':
             gui.notes_menu(update, context)
-        elif query.data == 'abyss_menu':
-            gui.abyss_menu(update)
+        elif query.data == 'abyss_seasons_menu':
+            gui.abyss_seasons_menu(update)
+        elif query.data.startswith('abyss_floors_menu'):
+            args = query.data.split('_')
+            gui.abyss_floors_menu(update, args[-1] == 'previous')
+        elif query.data.startswith('abyss_menu'):
+            args = query.data.split('_')
+            gui.abyss_menu(update, args[-2] == 'previous', args[-1])
 
 
 def setup_handlers(dispatch, job_queue):

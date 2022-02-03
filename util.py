@@ -21,6 +21,7 @@ CHAR = re.compile(r'Side_(.*)\.png')
 UPD_NOTES = 4 * 60 * 60  # update every 4 hours
 CONF_FILE = '.config'
 _CONFIG = None
+FLOORS = {'9': 0, '10': 1, '11': 2, '12': 3}
 
 
 class CMD(Enum):
@@ -85,12 +86,14 @@ def fmt_expeditions(expeditions):
     return "".join(char_info)
 
 
-def fmt_floors(floors):
+def fmt_floors(floors, floor):
     def parse_characters(battles):
         return " | ".join(
             [", ".join(
                 [char['name'] for char in chamber['characters']]
             ) for chamber in battles])
+    if floor in FLOORS:
+        floors = [floors[FLOORS[floor]]]
     floor_info = []
     for fl in floors:
         for ch in fl['chambers']:
