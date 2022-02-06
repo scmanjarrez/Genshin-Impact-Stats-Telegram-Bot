@@ -8,7 +8,7 @@ from telegram.error import BadRequest
 
 import genshinstats as gs
 import threads as th
-import util as ut
+import utils as ut
 
 
 def _answer(update, msg=None):

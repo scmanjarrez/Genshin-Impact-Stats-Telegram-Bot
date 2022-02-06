@@ -6,7 +6,7 @@
 import genshinstats.errors as err
 import genshinstats as gs
 import paimon_gui as gui
-import util as ut
+import utils as ut
 
 
 STATE = ut.CMD.NOP

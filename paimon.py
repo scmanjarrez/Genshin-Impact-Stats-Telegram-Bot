@@ -11,7 +11,7 @@ from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
 import genshinstats as gs
 import paimon_cli as cli
 import paimon_gui as gui
-import util as ut
+import utils as ut
 import logging
 import os
 

@@ -6,7 +6,7 @@
 from threading import Thread, Event
 
 import paimon_gui as gui
-import util as ut
+import utils as ut
 
 
 THREAD = None
