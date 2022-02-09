@@ -18,10 +18,11 @@ import re
 
 
 CHAR = re.compile(r'Side_(.*)\.png')
-UPD_NOTES = 4 * 60 * 60  # update every 4 hours
+UPD_TIME = 4 * 60 * 60  # update every 4 hours
 CONF_FILE = '.config'
 _CONFIG = None
 FLOORS = {'9': 0, '10': 1, '11': 2, '12': 3}
+WARN_TIME = 10 * 8 * 60  # 10 resin time
 
 
 class CMD(Enum):
@@ -124,14 +125,35 @@ def daily_checkin(queue, uid):
 
 
 def update_notes(context):
-    update = context.job.context
-    gui.update_notes(update)
+    queue, update = context.job.context
+    gui.update_notes(queue, update)
 
 
 def autoupdate_notes(queue, update):
     _remove_job(queue, 'autoupdate_notes')
-    queue.run_repeating(update_notes, UPD_NOTES,
-                        context=update, name='autoupdate_notes')
+    queue.run_repeating(update_notes, UPD_TIME,
+                        context=(queue, update), name='autoupdate_notes')
+
+
+def notify(context):
+    queue, update = context.job.context
+    notes = gs.get_notes(config('uid'))
+    resin_limit = int(notes['until_resin_limit'])
+    if resin_limit == 0:
+        send(update, "‼ Hey, your resin has reached the cap!", button=True)
+    else:
+        if resin_limit <= WARN_TIME:
+            send(update, "❗ Hey, your resin is over 150!", button=True)
+        notifier(queue, update, resin_limit)
+
+
+def notifier(queue, update, seconds):
+    _remove_job(queue, 'notifier')
+    warn = int(seconds) - WARN_TIME
+    if warn <= 0:
+        warn = seconds
+    queue.run_once(notify, warn,
+                   context=(queue, update), name='notifier')
 
 
 def last_updated():

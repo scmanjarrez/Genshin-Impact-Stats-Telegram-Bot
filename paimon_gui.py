@@ -7,7 +7,6 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
 
 import genshinstats as gs
-import threads as th
 import utils as ut
 
 
@@ -36,8 +35,8 @@ def main_menu(update):
 def notes_menu(update, context):
     ut.autoupdate_notes(context.job_queue, update)
     notes = gs.get_notes(ut.config('uid'))
+    ut.notifier(context.job_queue, update, notes['until_resin_limit'])
     _answer(update)
-    th.new_thread(update, notes['until_resin_limit'])
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
            f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
@@ -59,8 +58,9 @@ def notes_menu(update, context):
     ut.edit(update, msg, InlineKeyboardMarkup(kb))
 
 
-def update_notes(update):
+def update_notes(queue, update):
     notes = gs.get_notes(ut.config('uid'))
+    ut.notifier(queue, update, notes['until_resin_limit'])
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
            f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
@@ -80,7 +80,6 @@ def update_notes(update):
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
     ut.edit(update, msg, InlineKeyboardMarkup(kb))
-    return int(notes['until_resin_limit'])
 
 
 def abyss_seasons_menu(update):
