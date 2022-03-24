@@ -41,6 +41,10 @@ def notes_menu(update, context):
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
            f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
 
+           f"<b>Teapot Currency:</b> <code>{notes['realm_currency']}/"
+           f"{notes['max_realm_currency']} "
+           f"({ut.fmt_seconds(notes['until_realm_currency_limit'])})</code>\n"
+
            f"<b>Commissions:</b> "
            f"<code>{notes['completed_commissions']}/"
            f"{notes['total_commissions']} ({claimed})</code>\n"
@@ -64,6 +68,10 @@ def update_notes(queue, update):
     claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
     msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
            f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
+
+           f"<b>Teapot Currency:</b> <code>{notes['realm_currency']}/"
+           f"{notes['max_realm_currency']} "
+           f"({ut.fmt_seconds(notes['until_realm_currency_limit'])})</code>\n"
 
            f"<b>Commissions:</b> "
            f"<code>{notes['completed_commissions']}/"
@@ -129,9 +137,9 @@ def abyss_menu(update, previous, floor):
            f"({abyss['stats']['total_stars']}*)</code>\n"
 
            f"<b>Floors:</b>\n"
-           f"{ut.fmt_floors(abyss['floors'], floor)}")
+           f"{ut.fmt_floors(abyss['floors'], floor, previous)}")
     kb = [button([("🔃 Update 🔃", f'abyss_menu{suffix}_{floor}')]),
-          button([("« Back to Floors", 'abyss_floors_menu{prefix}'),
+          button([("« Back to Floors", f'abyss_floors_menu{suffix}'),
                   ("« Back to Seasons", 'abyss_seasons_menu'),
                   ("« Back to Menu", 'main_menu')])]
     ut.edit(update, msg, InlineKeyboardMarkup(kb))

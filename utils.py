@@ -87,12 +87,15 @@ def fmt_expeditions(expeditions):
     return "".join(char_info)
 
 
-def fmt_floors(floors, floor):
-    def parse_characters(battles):
-        return " | ".join(
-            [", ".join(
-                [char['name'] for char in chamber['characters']]
-            ) for chamber in battles])
+def parse_characters(battles):
+    return " | ".join(
+        [", ".join(
+            [char['name'] for char in chamber['characters']]
+        ) for chamber in battles])
+
+
+def fmt_floors(floors, floor, previous):
+    floors = floors[-4:]
     if floor in FLOORS:
         floors = [floors[FLOORS[floor]]]
     floor_info = []
