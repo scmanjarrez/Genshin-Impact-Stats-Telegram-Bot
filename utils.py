@@ -148,6 +148,7 @@ def notify(context):
         if resin_limit <= WARN_TIME:
             send(update, "❗ Hey, your resin is over 150!", button=True)
         notifier(queue, update, resin_limit)
+    gui.update_notes(queue, update)
 
 
 def notifier(queue, update, seconds):
