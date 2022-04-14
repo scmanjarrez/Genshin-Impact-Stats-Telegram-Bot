@@ -123,6 +123,7 @@ def daily_callback(context):
 
 
 def daily_checkin(queue, uid):
+    gs.claim_daily_reward()
     midnight = datetime.time(minute=10, tzinfo=pytz.timezone('Asia/Shanghai'))
     queue.run_daily(daily_callback, midnight, name='daily_checkin')
 
