@@ -155,11 +155,12 @@ def notify(context):
 def notifier(queue, update, seconds):
     seconds = int(seconds)
     _remove_job(queue, 'notifier')
-    warn = seconds - WARN_TIME
-    if warn <= 0:
-        warn = seconds
-    queue.run_once(notify, warn,
-                   context=(queue, update), name='notifier')
+    if seconds > 0:
+        warn = seconds - WARN_TIME
+        if warn <= 0:
+            warn = seconds
+        queue.run_once(notify, warn,
+                       context=(queue, update), name='notifier')
 
 
 def last_updated():
