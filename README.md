@@ -38,7 +38,7 @@ cancel - Cancel current action.
     > superuser (**sudo**).
 
 # License
-    Copyright (c) 2022 scmanjarrez. All rights reserved.
+    Copyright (c) 2021-2022 scmanjarrez. All rights reserved.
     This work is licensed under the terms of the MIT license.
 
 For a copy, see
