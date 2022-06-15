@@ -42,4 +42,4 @@ cancel - Cancel current action.
     This work is licensed under the terms of the MIT license.
 
 For a copy, see
-[LICENSE](https://github.com/scmanjarrez/Genshin-Impact-Stats-Telegram-Bot/blob/master/LICENSE).
+[LICENSE](LICENSE).
