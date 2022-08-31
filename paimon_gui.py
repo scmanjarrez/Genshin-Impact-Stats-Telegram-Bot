@@ -5,103 +5,92 @@
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
+from typing import List, Optional, Tuple
+from telegram import Update
 
-import genshinstats as gs
+
 import utils as ut
+import calendar
+import datetime
 
 
-def _answer(update, msg=None):
+async def _answer(update: Update, msg: str = None) -> None:
     if update.callback_query is not None:
         try:
-            update.callback_query.answer(msg)
+            await update.callback_query.answer(msg)
         except BadRequest:
             pass
 
 
-def button(buttons):
-    return [InlineKeyboardButton(bt[0], callback_data=bt[1]) for bt in buttons]
+def button(buttons: List[Tuple[str, str]]):
+    return [InlineKeyboardButton(bt[0], callback_data=bt[1])
+            for bt in buttons]
 
 
-def main_menu(update):
-    _answer(update)
+async def main_menu(update: Update) -> None:
+    await _answer(update)
     kb = [button([("🗒 Daily Notes 🗒", 'notes_menu')]),
+          button([("📖 Traveler's Diary 📖", 'diary_month_menu')]),
           button([("✨ Abyss ✨", 'abyss_seasons_menu')])]
     resp = ut.send
     if update.callback_query is not None:
         resp = ut.edit
-    resp(update, "Menu", reply_markup=InlineKeyboardMarkup(kb))
+    await resp(update, "Menu", reply_markup=InlineKeyboardMarkup(kb))
 
 
-def notes_menu(update, context):
-    ut.autoupdate_notes(context.job_queue, update)
-    notes = gs.get_notes(ut.config('uid'))
-    ut.notifier(context.job_queue, update, notes['until_resin_limit'])
-    _answer(update)
-    claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
-    msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
-           f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
-
-           f"<b>Teapot Currency:</b> <code>{notes['realm_currency']}/"
-           f"{notes['max_realm_currency']} "
-           f"({ut.fmt_seconds(notes['until_realm_currency_limit'])})</code>\n"
-
-           f"<b>Commissions:</b> "
-           f"<code>{notes['completed_commissions']}/"
-           f"{notes['total_commissions']} ({claimed})</code>\n"
-
-           f"<b>Weekly Boss Discounts:</b> "
-           f"<code>{notes['remaining_boss_discounts']}/"
-           f"{notes['max_boss_discounts']}</code>\n"
-
-           f"<b>Expeditions:</b>\n"
-           f"{ut.fmt_expeditions(notes['expeditions'])}\n"
-
-           f"<code>Last updated: {ut.last_updated()}</code>")
+async def notes_menu(update: Update, context: ut.Context) -> None:
+    ut.autoupdate_notes(update, context)
+    msg, remaining = await ut.notes(ut.uid(update))
+    ut.notifier(update, context, remaining)
+    await _answer(update)
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
-    ut.edit(update, msg, InlineKeyboardMarkup(kb))
+    await ut.edit(update, msg, InlineKeyboardMarkup(kb))
 
 
-def update_notes(queue, update):
-    notes = gs.get_notes(ut.config('uid'))
-    ut.notifier(queue, update, notes['until_resin_limit'])
-    claimed = 'Claimed' if notes['claimed_commission_reward'] else 'Unclaimed'
-    msg = (f"<b>Resin:</b> <code>{notes['resin']}/{notes['max_resin']} "
-           f"({ut.fmt_seconds(notes['until_resin_limit'])})</code>\n"
-
-           f"<b>Teapot Currency:</b> <code>{notes['realm_currency']}/"
-           f"{notes['max_realm_currency']} "
-           f"({ut.fmt_seconds(notes['until_realm_currency_limit'])})</code>\n"
-
-           f"<b>Commissions:</b> "
-           f"<code>{notes['completed_commissions']}/"
-           f"{notes['total_commissions']} ({claimed})</code>\n"
-
-           f"<b>Weekly Boss Discounts:</b> "
-           f"<code>{notes['remaining_boss_discounts']}/"
-           f"{notes['max_boss_discounts']}</code>\n"
-
-           f"<b>Expeditions:</b>\n"
-           f"{ut.fmt_expeditions(notes['expeditions'])}\n"
-
-           f"<code>Last updated: {ut.last_updated()}</code>")
+async def update_notes(update: Update, context: ut.Context,
+                       data: Optional[Tuple[str, ut.TimeDelta]] = None
+                       ) -> None:
+    if data is None:
+        msg, remaining = await ut.notes(ut.uid(update))
+    else:
+        msg, remaining = data
+    ut.notifier(update, context, remaining)
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
-    ut.edit(update, msg, InlineKeyboardMarkup(kb))
+    await ut.edit(update, msg, InlineKeyboardMarkup(kb))
 
 
-def abyss_seasons_menu(update):
-    _answer(update)
+async def diary_month_menu(update: Update) -> None:
+    await _answer(update)
+    month = datetime.datetime.now().month
+    kb = [button([(calendar.month_name[month], f'diary_menu_{month}'),
+                  (calendar.month_name[month-1], f'diary_menu_{month-1}'),
+                  (calendar.month_name[month-2], f'diary_menu_{month-2}')]),
+          button([("« Back to Menu", 'main_menu')])]
+    await ut.edit(update, "Traveler's Diary", InlineKeyboardMarkup(kb))
+
+
+async def diary_menu(update: Update, month: int) -> None:
+    msg = await ut.diary(ut.uid(update), month)
+    await _answer(update)
+    kb = [button([("« Back to Diary", 'diary_month_menu'),
+                  ("« Back to Menu", 'main_menu')])]
+    await ut.edit(update, msg, InlineKeyboardMarkup(kb))
+
+
+async def abyss_seasons_menu(update: Update) -> None:
+    await _answer(update)
     kb = [button([("Current", 'abyss_floors_menu'),
                   ("Previous", 'abyss_floors_menu_previous')]),
           button([("« Back to Menu", 'main_menu')])]
     if update.callback_query is not None:
         resp = ut.edit
-    resp(update, "Abyss Seasons", reply_markup=InlineKeyboardMarkup(kb))
+    await resp(update, "Abyss Seasons", reply_markup=InlineKeyboardMarkup(kb))
 
 
-def abyss_floors_menu(update, previous):
-    _answer(update)
+async def abyss_floors_menu(update: Update, previous: bool) -> None:
+    await _answer(update)
     suffix = ''
     season = "current"
     if previous:
@@ -116,30 +105,19 @@ def abyss_floors_menu(update, previous):
                   ("« Back to Menu", 'main_menu')])]
     if update.callback_query is not None:
         resp = ut.edit
-    resp(update, f"Abyss Floors ({season})",
-         reply_markup=InlineKeyboardMarkup(kb))
+    await resp(update, f"Abyss Floors ({season})",
+               reply_markup=InlineKeyboardMarkup(kb))
 
 
-def abyss_menu(update, previous, floor):
-    abyss = gs.get_spiral_abyss(ut.config('uid'), previous)
-    _answer(update)
+async def abyss_menu(update: Update, previous: bool, floor: str) -> None:
+    msg = await ut.abyss(ut.uid(update), previous, floor)
+    await _answer(update)
     suffix = ''
-    season = "Current Season"
     if previous:
         suffix = '_previous'
-        season = "Previous Season"
-    msg = (f"<b>⚜ {season} ⚜\n\n</b>"
 
-           f"<b>Deepest Descent:</b> "
-           f"<code>{abyss['stats']['max_floor']}</code>\n"
-
-           f"<b>Battles Fought:</b> <code>{abyss['stats']['total_battles']} "
-           f"({abyss['stats']['total_stars']}*)</code>\n"
-
-           f"<b>Floors:</b>\n"
-           f"{ut.fmt_floors(abyss['floors'], floor, previous)}")
     kb = [button([("🔃 Update 🔃", f'abyss_menu{suffix}_{floor}')]),
           button([("« Back to Floors", f'abyss_floors_menu{suffix}'),
                   ("« Back to Seasons", 'abyss_seasons_menu'),
                   ("« Back to Menu", 'main_menu')])]
-    ut.edit(update, msg, InlineKeyboardMarkup(kb))
+    await ut.edit(update, msg, InlineKeyboardMarkup(kb))

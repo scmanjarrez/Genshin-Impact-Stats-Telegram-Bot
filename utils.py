@@ -3,26 +3,37 @@
 # Copyright (c) 2021-2022 scmanjarrez. All rights reserved.
 # This work is licensed under the terms of the MIT license.
 
+from telegram import Bot, InlineKeyboardMarkup, Update
+from telegram.ext import ContextTypes, JobQueue
+from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram import ParseMode
+from typing import List, Tuple, Union
 from enum import Enum
 
-import configparser as cfg
-import genshinstats as gs
 import paimon_gui as gui
 import traceback
+import calendar
 import datetime
+import genshin
+import json
 import pytz
-import time
-import re
 
 
-CHAR = re.compile(r'Side_(.*)\.png')
+# Global
+CONF_FILE = '.config.json'
+CONFIG = None
+CLIENT = {}
 UPD_TIME = 4 * 60 * 60  # update every 4 hours
-CONF_FILE = '.config'
-_CONFIG = None
-FLOORS = {'9': 0, '10': 1, '11': 2, '12': 3}
 WARN_TIME = 10 * 8 * 60  # 10 resin time
+
+# Type aliases
+Context = ContextTypes.DEFAULT_TYPE
+TimeDelta = datetime.timedelta
+ExpChars = List[genshin.models.genshin.chronicle.notes.Expedition]
+Floors = List[genshin.models.genshin.chronicle.abyss.Floor]
+Battles = List[genshin.models.genshin.chronicle.abyss.Battle]
+Stats = genshin.models.genshin.chronicle.abyss.CharacterRanks
+StatChars = List[genshin.models.genshin.chronicle.abyss.AbyssRankCharacter]
 
 
 class CMD(Enum):
@@ -30,42 +41,63 @@ class CMD(Enum):
     GIFT = 'redeem'
 
 
-def _load_config():
-    global _CONFIG
-    if _CONFIG is None:
-        parser = cfg.ConfigParser()
-        parser.read(CONF_FILE)
-        _CONFIG = {k: v for section in parser.sections()
-                   for k, v in parser[section].items()}
+def set_up() -> None:
+    global CONFIG, CLIENT
+    with open(CONF_FILE) as f:
+        CONFIG = json.load(f)
+    for acc in CONFIG['accounts']:
+        CLIENT[acc] = genshin.Client(
+            {
+                'ltoken': account(acc, 'ltoken'),
+                'ltuid': account(acc, 'ltuid'),
+                'account_id': account(acc, 'ltuid'),
+                'cookie_token': account(acc, 'ctoken')
+            }
+        )
+        CLIENT[acc].default_game = 'genshin'
 
 
-def config(key):
-    _load_config()
-    return _CONFIG[key]
+def setting(key: str) -> str:
+    return CONFIG['settings'][key]
 
 
-def uid(update):
-    return update.effective_message.chat.id
+def account(uid: str, key: str) -> Union[str, int]:
+    return CONFIG['accounts'][uid][key]
 
 
-def send(update, msg, button=False, quote=True, reply_markup=None):
+def uid(update: Update) -> str:
+    return str(update.effective_message.chat.id)
+
+
+async def send(update: Update, msg: str, button: bool = False,
+               quote: bool = True,
+               reply_markup: InlineKeyboardMarkup = None) -> None:
     if button:
-        update.callback_query.message.chat.send_message(msg)
+        await (update
+               .callback_query
+               .message.chat.send_message(msg, ParseMode.HTML))
     else:
-        update.message.reply_html(msg, quote=quote, reply_markup=reply_markup,
-                                  disable_web_page_preview=True)
+        await (update
+               .message
+               .reply_html(msg, quote=quote, reply_markup=reply_markup,
+                           disable_web_page_preview=True))
 
 
-def send_bot(bot, uid, msg, reply_markup=None):
-    bot.send_message(uid, msg, ParseMode.HTML, reply_markup=reply_markup,
-                     disable_web_page_preview=True)
+async def send_bot(bot: Bot, uid: int, msg: str,
+                   reply_markup: InlineKeyboardMarkup = None) -> None:
+    await (bot
+           .send_message(uid, msg, ParseMode.HTML, reply_markup=reply_markup,
+                         disable_web_page_preview=True))
 
 
-def edit(update, msg, reply_markup):
+async def edit(update: Update, msg: str,
+               reply_markup: InlineKeyboardMarkup = None) -> None:
     try:
-        update.callback_query.edit_message_text(msg, ParseMode.HTML,
-                                                reply_markup=reply_markup,
-                                                disable_web_page_preview=True)
+        await (update
+               .callback_query
+               .edit_message_text(msg, ParseMode.HTML,
+                                  reply_markup=reply_markup,
+                                  disable_web_page_preview=True))
     except BadRequest as br:
         if not str(br).startswith("Message is not modified:"):
             print(f"***  Exception caught in edit "
@@ -73,96 +105,218 @@ def edit(update, msg, reply_markup):
             traceback.print_stack()
 
 
-def fmt_seconds(seconds):
-    return time.strftime("%H:%M:%S", time.gmtime(int(seconds)))
-
-
-def fmt_expeditions(expeditions):
-    char_info = []
-    for exp in expeditions:
-        name = re.search(CHAR, exp['icon']).group(1)
-        remain = (fmt_seconds(exp['remaining_time'])
-                  if exp['remaining_time'] != 0 else 'Finished')
-        char_info.append(f"    - {name} => <code>{remain}</code>\n")
-    return "".join(char_info)
-
-
-def parse_characters(battles):
-    return " | ".join(
-        [", ".join(
-            [char['name'] for char in chamber['characters']]
-        ) for chamber in battles])
-
-
-def fmt_floors(floors, floor, previous):
-    floors = floors[-4:]
-    if floor in FLOORS:
-        floors = [floors[FLOORS[floor]]]
-    floor_info = []
-    for fl in floors:
-        for ch in fl['chambers']:
-            floor_info.append(f"    - <b>{fl['floor']}-{ch['chamber']} "
-                              f"({ch['stars']}/{ch['max_stars']}*):</b> "
-                              f"<code>{parse_characters(ch['battles'])}"
-                              f"</code>\n")
-        floor_info.append("\n")
-    return "".join(floor_info)
-
-
-def _remove_job(queue, name):
+def _remove_job(queue: JobQueue, name: str) -> None:
     current_jobs = queue.get_jobs_by_name(name)
     if current_jobs:
         for job in current_jobs:
+            # print(f"INFO: Removing job: {name}")
             job.schedule_removal()
 
 
-def daily_callback(context):
-    reward = gs.claim_daily_reward()
-    if reward is None:
-        send_bot(context.bot, config('admin'), "Could not claim daily reward.")
+async def daily_callback(context: Context = None) -> None:
+    for uid, client in CLIENT.items():
+        try:
+            # reward = await client.claim_daily_reward()
+            await client.claim_daily_reward()
+        except genshin.AlreadyClaimed:
+            # print(f"INFO: Daily already claimed: {uid}")
+            pass
+        else:
+            # print(f"INFO: Claimed {reward.amount}x {reward.name}")
+            pass
 
 
-def daily_checkin(queue, uid):
-    gs.claim_daily_reward()
-    midnight = datetime.time(minute=10, tzinfo=pytz.timezone('Asia/Shanghai'))
-    queue.run_daily(daily_callback, midnight, name='daily_checkin')
+async def daily_checkin(context: Context) -> None:
+    await daily_callback()
+    midnight = datetime.time(
+        minute=10, tzinfo=pytz.timezone('Asia/Shanghai'))
+    context.job_queue.run_daily(
+        daily_callback, midnight, name='daily_checkin')
 
 
-def update_notes(context):
-    queue, update = context.job.context
-    gui.update_notes(queue, update)
+async def update_notes(context: Context) -> None:
+    await gui.update_notes(context.job.data, context)
 
 
-def autoupdate_notes(queue, update):
-    _remove_job(queue, 'autoupdate_notes')
-    queue.run_repeating(update_notes, UPD_TIME,
-                        context=(queue, update), name='autoupdate_notes')
+def autoupdate_notes(update: Update, context: Context) -> None:
+    queue = context.job_queue
+    _remove_job(queue, f'autoupdate_notes_{uid(update)}')
+    queue.run_repeating(
+        update_notes, UPD_TIME,
+        name=f'autoupdate_notes_{uid(update)}', data=update)
 
 
-def notify(context):
-    queue, update = context.job.context
-    notes = gs.get_notes(config('uid'))
-    resin_limit = int(notes['until_resin_limit'])
-    if resin_limit == 0:
-        send(update, "‼ Hey, your resin has reached the cap!", button=True)
+async def notify(context: Context) -> None:
+    update = context.job.data
+    msg, remaining = await notes(uid(update))
+    seconds = remaining.seconds
+    if not seconds:
+        await send(update, "‼ Hey, your resin has reached the cap!",
+                   button=True)
     else:
-        if resin_limit <= WARN_TIME:
-            send(update, "❗ Hey, your resin is over 150!", button=True)
-        notifier(queue, update, resin_limit)
-    gui.update_notes(queue, update)
+        if seconds <= WARN_TIME:
+            await send(update, "❗ Hey, your resin is over 150!",
+                       button=True)
+        notifier(update, context, remaining)
+    await gui.update_notes(update, context, (msg, remaining))
 
 
-def notifier(queue, update, seconds):
-    seconds = int(seconds)
-    _remove_job(queue, 'notifier')
-    if seconds > 0:
+def notifier(update: Update, context: Context, remaining: TimeDelta) -> None:
+    queue = context.job_queue
+    _remove_job(queue, f'notifier_{uid(update)}')
+    seconds = remaining.seconds
+    if seconds:
         warn = seconds - WARN_TIME
         if warn <= 0:
             warn = seconds
-        queue.run_once(notify, warn,
-                       context=(queue, update), name='notifier')
+        queue.run_once(
+            notify, warn,
+            name=f'notifier_{uid(update)}', data=update)
 
 
-def last_updated():
+def last_updated() -> str:
     return datetime.datetime.now(
-        pytz.timezone(config('timezone'))).strftime('%Y/%m/%d %H:%M:%S')
+        pytz.timezone(setting('timezone'))).strftime('%Y/%m/%d %H:%M:%S')
+
+
+async def redeem(uid: str, code: str) -> None:
+    try:
+        await CLIENT[uid].redeem_code(code)
+    except genshin.errors.RedemptionException as e:
+        msg = e.msg
+    else:
+        msg = "Code redeemed successfully."
+    return msg
+
+
+async def notes(uid: str) -> Tuple[str, TimeDelta]:
+    data = await CLIENT[uid].get_genshin_notes(account(uid, 'uid'))
+    claimed = 'Claimed' if data.claimed_commission_reward else 'Unclaimed'
+    msg = (
+        f"<b>Resin:</b> "
+        f"<code>"
+        f"{data.current_resin}/{data.max_resin} "
+        f"({data.remaining_resin_recovery_time})"
+        f"</code>\n"
+
+        f"<b>Teapot Currency:</b> "
+        f"<code>"
+        f"{data.current_realm_currency}/{data.max_realm_currency} "
+        f"({data.remaining_realm_currency_recovery_time})"
+        f"</code>\n"
+
+        f"<b>Parametric Transformer:</b> "
+        f"<code>"
+        f"{data.remaining_transformer_recovery_time}"
+        f"</code>\n"
+
+        f"<b>Commissions:</b> "
+        f"<code>"
+        f"{data.completed_commissions}/{data.max_commissions} ({claimed})"
+        f"</code>\n"
+
+        f"<b>Weekly Boss Discounts:</b> "
+        f"<code>"
+        f"{data.remaining_resin_discounts}/{data.max_resin_discounts}"
+        f"</code>\n"
+
+        f"<b>Expeditions:</b>\n"
+        f"{fmt_exp_chars(data.expeditions)}\n"
+
+        f"<b>Last updated</b>: <code>{last_updated()}</code>"
+    )
+    return msg, data.remaining_resin_recovery_time
+
+
+def fmt_exp_chars(characters: ExpChars) -> str:
+    exp = [f"    - {chr.character.name} => "
+           f"<code>"
+           f"{chr.remaining_time if not chr.finished else 'Finished'}"
+           f"</code>\n"
+           for chr in characters]
+    return "".join(exp)
+
+
+async def diary(uid: str, month: int) -> str:
+    info = await CLIENT[uid].get_diary(month=month)
+    msg = [f"<b>Primogems earned in {calendar.month_name[month]}</b>: "
+           f"<code>{info.data.current_primogems}</code>"]
+    for category in info.data.categories:
+        msg.append(f"    - {category.name}: "
+                   f"<code>{category.amount} "
+                   f"({category.percentage} %)</code>")
+    return "\n".join(msg)
+
+
+async def abyss(uid: str, previous: bool = False, floor: str = 'all') -> str:
+    data = await CLIENT[uid].get_spiral_abyss(
+        account(uid, 'uid'), previous=previous)
+    sea = "Current"
+    if previous:
+        sea = 'Previous'
+
+    msg = (f"⚜ <b>{sea} Season</b> ⚜\n\n"
+           f"<b>Summary</b>:\n"
+           f"    - <b>Deepest Descent:</b> "
+           f"<code>"
+           f"{data.max_floor}"
+           f"</code>\n"
+
+           f"    - <b>Battles Fought:</b> "
+           f"<code>"
+           f"{data.total_battles} ({data.total_stars} ⭐️)"
+           f"</code>\n\n"
+
+           f"<b>Stats</b>:\n"
+           f"{fmt_stats(data.ranks)}\n"
+
+           f"<b>Floors:</b>\n"
+           f"{fmt_floors(data.floors, floor)}")
+    return msg
+
+
+def _floor(floors: Floors, floor: str) -> Floors:
+    if floor in ('9', '10', '11', '12'):
+        return [floors[int(floor) - 13]]
+    else:
+        return floors[-4:]
+
+
+def fmt_floors(floors: Floors, floor: str) -> str:
+    data = _floor(floors, floor)
+    return "\n".join([
+        "".join([(f"    - <b>{fl.floor} - {ch.chamber}</b>: "
+                  f"{ch.stars}/{ch.max_stars} ⭐️\n"
+                  f"{fmt_battle_chars(ch.battles)}\n")
+                 for ch in fl.chambers])
+        for fl in data])
+
+
+def fmt_battle_chars(battles: Battles) -> str:
+    msg = []
+    for battle in battles:
+        half = [char.name for char in battle.characters]
+        msg.append(f"    » <code>{', '.join(half)}</code>")
+    return "\n".join(msg)
+
+
+def fmt_stats(stats: Stats) -> str:
+    return (f"    - <b>Most played</b>:\n"
+            f"{fmt_stat_chars(stats.most_played)}\n"
+            f"    - <b>Most kills</b>:\n"
+            f"{fmt_stat_chars(stats.most_kills)}\n"
+            f"    - <b>Strongest strike</b>:\n"
+            f"{fmt_stat_chars(stats.strongest_strike)}\n"
+            f"    - <b>Most damage taken</b>:\n"
+            f"{fmt_stat_chars(stats.most_damage_taken)}\n"
+            f"    - <b>Most bursts used</b>:\n"
+            f"{fmt_stat_chars(stats.most_bursts_used)}\n"
+            f"    - <b>Most skills used</b>:\n"
+            f"{fmt_stat_chars(stats.most_skills_used)}\n")
+
+
+def fmt_stat_chars(characters: StatChars) -> str:
+    msg = []
+    for ch in characters:
+        msg.append(f"    » <code>{ch.name} ({ch.value})</code>")
+    return "\n".join(msg)

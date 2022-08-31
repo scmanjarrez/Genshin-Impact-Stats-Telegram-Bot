@@ -3,8 +3,7 @@
 # Copyright (c) 2021-2022 scmanjarrez. All rights reserved.
 # This work is licensed under the terms of the MIT license.
 
-import genshinstats.errors as err
-import genshinstats as gs
+from telegram import Update
 import paimon_gui as gui
 import utils as ut
 
@@ -29,62 +28,52 @@ HELP = (
 )
 
 
-def _state(state=ut.CMD.NOP):
+def _state(state: ut.CMD = ut.CMD.NOP) -> None:
     global STATE
     STATE = state
 
 
-def allowed(uid):
-    return uid == int(ut.config('admin'))
+def allowed(uid: str) -> bool:
+    return uid in ut.CLIENT
 
 
-def bot_help(update, context):
+async def bot_help(update: Update, context: ut.Context) -> None:
     uid = ut.uid(update)
     if allowed(uid):
-        ut.send(update, HELP)
+        await ut.send(update, HELP)
 
 
-def menu(update, context):
+async def menu(update: Update, context: ut.Context) -> None:
     uid = ut.uid(update)
     if allowed(uid):
-        gui.main_menu(update)
+        await gui.main_menu(update)
 
 
-def _redeem(code):
-    try:
-        gs.redeem_code(code)
-    except err.GenshinStatsException as e:
-        msg = e.msg
-    else:
-        msg = "Code redeemed successfully."
-    return msg
-
-
-def redeem(update, context):
+async def redeem(update: Update, context: ut.Context) -> None:
     uid = ut.uid(update)
     if allowed(uid):
         if context.args:
-            msg = _redeem(context.args[0])
+            msg = await ut.redeem(uid, context.args[0])
         else:
             msg = "Tell me the gift code to redeem:"
             _state(ut.CMD.GIFT)
-        ut.send(update, msg)
+        await ut.send(update, msg)
 
 
-def text(update, context):
+async def text(update: Update, context: ut.Context) -> None:
     uid = ut.uid(update)
     if allowed(uid):
         msg = "❗ Send only one argument."
         args = update.message.text.split()
         if len(args) == 1:
             if STATE == ut.CMD.GIFT:
-                msg = _redeem(args[0])
+                msg = await ut.redeem(uid, args[0])
             else:
                 _state(uid)
-        ut.send(update, msg)
+        await ut.send(update, msg)
 
 
-def cancel(update, context):
+async def cancel(update: Update, context: ut.Context) -> None:
     uid = ut.uid(update)
     if allowed(uid):
         if STATE != ut.CMD.NOP:
@@ -96,4 +85,4 @@ def cancel(update, context):
         else:
             msg = ("No active command to cancel. "
                    "I wasn't doing anything anyway.\nZzzzz...")
-        ut.send(update, msg)
+        await ut.send(update, msg)

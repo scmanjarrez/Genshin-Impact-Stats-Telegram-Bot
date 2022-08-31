@@ -1,0 +1,18 @@
+{
+    "settings": {
+        "token": "bot_token",
+        "ip": "vps_ip",
+        "listen": "0.0.0.0",
+        "port": "vps_port",
+        "cert": "cert_path",
+        "timezone": "timezone"
+    },
+    "accounts": {
+        "telegram_id": {
+            "ltoken": "XXXXXXXXXXXXXXXXXX",
+            "ltuid": 00000000,
+            "ctoken": "XXXXXXXXXXXXXXXXxx",
+            "uid": 00000000
+        }
+    }
+}
