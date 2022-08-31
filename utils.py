@@ -25,6 +25,7 @@ CONFIG = None
 CLIENT = {}
 UPD_TIME = 4 * 60 * 60  # update every 4 hours
 WARN_TIME = 10 * 8 * 60  # 10 resin time
+FLOORS = ('9', '10', '11', '12')
 
 # Type aliases
 Context = ContextTypes.DEFAULT_TYPE
@@ -267,29 +268,32 @@ async def abyss(uid: str, previous: bool = False, floor: str = 'all') -> str:
            f"{data.total_battles} ({data.total_stars} ⭐️)"
            f"</code>\n\n"
 
-           f"<b>Stats</b>:\n"
-           f"{fmt_stats(data.ranks)}\n"
+           f"{fmt_stats(data.ranks)}"
 
-           f"<b>Floors:</b>\n"
+
            f"{fmt_floors(data.floors, floor)}")
     return msg
 
 
 def _floor(floors: Floors, floor: str) -> Floors:
-    if floor in ('9', '10', '11', '12'):
-        return [floors[int(floor) - 13]]
+    if floor in FLOORS:
+        return [fl for fl in floors if str(fl.floor) == floor]
     else:
-        return floors[-4:]
+        return [fl for fl in floors if str(fl.floor) in FLOORS]
 
 
 def fmt_floors(floors: Floors, floor: str) -> str:
     data = _floor(floors, floor)
-    return "\n".join([
+    msg = ""
+    parsed = "\n".join([
         "".join([(f"    - <b>{fl.floor} - {ch.chamber}</b>: "
                   f"{ch.stars}/{ch.max_stars} ⭐️\n"
                   f"{fmt_battle_chars(ch.battles)}\n")
                  for ch in fl.chambers])
         for fl in data])
+    if parsed:
+        msg = f"<b>Floors:</b>\n{parsed}"
+    return msg
 
 
 def fmt_battle_chars(battles: Battles) -> str:
@@ -301,18 +305,23 @@ def fmt_battle_chars(battles: Battles) -> str:
 
 
 def fmt_stats(stats: Stats) -> str:
-    return (f"    - <b>Most played</b>:\n"
-            f"{fmt_stat_chars(stats.most_played)}\n"
-            f"    - <b>Most kills</b>:\n"
-            f"{fmt_stat_chars(stats.most_kills)}\n"
-            f"    - <b>Strongest strike</b>:\n"
-            f"{fmt_stat_chars(stats.strongest_strike)}\n"
-            f"    - <b>Most damage taken</b>:\n"
-            f"{fmt_stat_chars(stats.most_damage_taken)}\n"
-            f"    - <b>Most bursts used</b>:\n"
-            f"{fmt_stat_chars(stats.most_bursts_used)}\n"
-            f"    - <b>Most skills used</b>:\n"
-            f"{fmt_stat_chars(stats.most_skills_used)}\n")
+    chars = sum([len(getattr(stats, category)) for category in stats.dict()])
+    msg = ""
+    if chars:
+        msg = (f"<b>Stats</b>:\n"
+               f"    - <b>Most played</b>:\n"
+               f"{fmt_stat_chars(stats.most_played)}\n"
+               f"    - <b>Most kills</b>:\n"
+               f"{fmt_stat_chars(stats.most_kills)}\n"
+               f"    - <b>Strongest strike</b>:\n"
+               f"{fmt_stat_chars(stats.strongest_strike)}\n"
+               f"    - <b>Most damage taken</b>:\n"
+               f"{fmt_stat_chars(stats.most_damage_taken)}\n"
+               f"    - <b>Most bursts used</b>:\n"
+               f"{fmt_stat_chars(stats.most_bursts_used)}\n"
+               f"    - <b>Most skills used</b>:\n"
+               f"{fmt_stat_chars(stats.most_skills_used)}\n\n")
+    return msg
 
 
 def fmt_stat_chars(characters: StatChars) -> str:
