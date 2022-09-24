@@ -149,7 +149,7 @@ def autoupdate_notes(update: Update, context: Context) -> None:
 
 async def notify(context: Context) -> None:
     update = context.job.data
-    msg, remaining = await notes(uid(update))
+    msg, remaining, parametric = await notes(uid(update))
     seconds = remaining.seconds
     if not seconds:
         await send(update, "‼ Hey, your resin has reached the cap!",
@@ -159,7 +159,7 @@ async def notify(context: Context) -> None:
             await send(update, "❗ Hey, your resin is over 150!",
                        button=True)
         notifier(update, context, remaining)
-    await gui.update_notes(update, context, (msg, remaining))
+    await gui.update_notes(update, context, (msg, remaining, parametric))
 
 
 def notifier(update: Update, context: Context, remaining: TimeDelta) -> None:
@@ -173,6 +173,21 @@ def notifier(update: Update, context: Context, remaining: TimeDelta) -> None:
         queue.run_once(
             notify, warn,
             name=f'notifier_{uid(update)}', data=update)
+
+
+async def notify_parametric(context: Context) -> None:
+    update = context.job.data
+    await send(update, "‼ Hey, your parametric is out of cooldown!",
+               button=True)
+
+
+def notifier_parametric(update: Update, context: Context,
+                        parametric: TimeDelta) -> None:
+    queue = context.job_queue
+    if not queue.get_jobs_by_name(f'parametric_{uid(update)}'):
+        queue.run_once(
+            notify_parametric, parametric,
+            name=f'parametric_{uid(update)}', data=update)
 
 
 def last_updated() -> str:
@@ -190,7 +205,7 @@ async def redeem(uid: str, code: str) -> None:
     return msg
 
 
-async def notes(uid: str) -> Tuple[str, TimeDelta]:
+async def notes(uid: str) -> Tuple[str, TimeDelta, TimeDelta]:
     data = await CLIENT[uid].get_genshin_notes(account(uid, 'uid'))
     claimed = 'Claimed' if data.claimed_commission_reward else 'Unclaimed'
     msg = (
@@ -226,7 +241,8 @@ async def notes(uid: str) -> Tuple[str, TimeDelta]:
 
         f"<b>Last updated</b>: <code>{last_updated()}</code>"
     )
-    return msg, data.remaining_resin_recovery_time
+    return (msg, data.remaining_resin_recovery_time,
+            data.remaining_transformer_recovery_time)
 
 
 def fmt_exp_chars(characters: ExpChars) -> str:

@@ -40,8 +40,9 @@ async def main_menu(update: Update) -> None:
 
 async def notes_menu(update: Update, context: ut.Context) -> None:
     ut.autoupdate_notes(update, context)
-    msg, remaining = await ut.notes(ut.uid(update))
+    msg, remaining, parametric = await ut.notes(ut.uid(update))
     ut.notifier(update, context, remaining)
+    ut.notifier_parametric(update, context, parametric)
     await _answer(update)
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
@@ -49,13 +50,15 @@ async def notes_menu(update: Update, context: ut.Context) -> None:
 
 
 async def update_notes(update: Update, context: ut.Context,
-                       data: Optional[Tuple[str, ut.TimeDelta]] = None
+                       data: Optional[
+                           Tuple[str, ut.TimeDelta, ut.TimeDelta]] = None
                        ) -> None:
     if data is None:
-        msg, remaining = await ut.notes(ut.uid(update))
+        msg, remaining, parametric = await ut.notes(ut.uid(update))
     else:
-        msg, remaining = data
+        msg, remaining, parametric = data
     ut.notifier(update, context, remaining)
+    ut.notifier_parametric(update, context, parametric)
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
     await ut.edit(update, msg, InlineKeyboardMarkup(kb))
