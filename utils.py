@@ -185,6 +185,8 @@ def notifier_parametric(update: Update, context: Context,
                         parametric: TimeDelta) -> None:
     queue = context.job_queue
     if not queue.get_jobs_by_name(f'parametric_{uid(update)}'):
+        if parametric.days > 0:
+            parametric = TimeDelta(days=parametric.days+1)
         queue.run_once(
             notify_parametric, parametric,
             name=f'parametric_{uid(update)}', data=update)
