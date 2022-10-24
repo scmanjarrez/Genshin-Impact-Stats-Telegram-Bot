@@ -24,12 +24,39 @@ cancel - Cancel current action.
     `openssl req -newkey rsa:2048 -sha256 -nodes -keyout paimon.key
     -x509 -days 3650 -out paimon.pem`
 
-- Modify **config.template** placeholders. Port must be **80**, **88**,
-  **443** or **8443**.
-
 - Create a copy of config.template.json and change the dummy values in .config.json.
 
     `cp config.template.json .config.json`
+    > - **token** - Telegram bot token, obtained from
+    > [@BotFather](https://t.me/BotFather)
+    >
+    > - **ip**: Your server ip, where the bot is hosted
+    >
+    > - **port**: Port to receive telegram updates: port must be 443, 80, 88 or 8443.
+    >
+    > - **cert**: Path to your server certificate (can be self-signed)
+    >
+    > - **timezone**: Your timezone as
+    > [TZ database name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List)
+    >
+    > - **telegram\_uid** - Must be changed with your actual telegram uid.
+    > You can obtain your telegram uid from bots like
+    > [@getmyid\_bot](https://t.me/getmyid_bot).
+    >
+    > ```json
+    >     "accounts": {
+    >         "123123123": {
+    >             "ltoken": "..."
+    >         }
+    >     }
+    > ```
+    > The following cookies can be obtained using the tutorial from
+    > [genshin.py](https://thesadru.github.io/genshin.py/authentication/)
+    > - **ltoken**: [hoyolab.com](https://www.hoyolab.com/genshin) unique token for authentication
+    > - **ltuid**: [hoyolab.com](https://www.hoyolab.com/genshin) uid
+    > - **ctoken**: cookie_token from [genshin.hoyoverse.com](https://genshin.hoyoverse.com/en/gift)
+    > - **uid**: account_id from [genshin.hoyoverse.com](https://genshin.hoyoverse.com/en/gift)
+
 
 - Execute the bot.
 

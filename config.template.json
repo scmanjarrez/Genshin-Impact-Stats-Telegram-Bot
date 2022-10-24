@@ -8,7 +8,7 @@
         "timezone": "timezone"
     },
     "accounts": {
-        "telegram_id": {
+        "telegram_uid": {
             "ltoken": "XXXXXXXXXXXXXXXXXX",
             "ltuid": 00000000,
             "ctoken": "XXXXXXXXXXXXXXXXxx",
