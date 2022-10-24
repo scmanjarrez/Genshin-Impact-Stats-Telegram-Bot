@@ -27,9 +27,9 @@ cancel - Cancel current action.
 - Modify **config.template** placeholders. Port must be **80**, **88**,
   **443** or **8443**.
 
-- Change config.template name.
+- Create a copy of config.template.json and change the dummy values in .config.json.
 
-    `mv config.template .config`
+    `cp config.template.json .config.json`
 
 - Execute the bot.
 
