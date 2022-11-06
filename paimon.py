@@ -6,8 +6,7 @@
 # This work is licensed under the terms of the MIT license.
 
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler,
-                          CommandHandler, filters,
-                          MessageHandler)
+                          CommandHandler, filters)
 from telegram import Update
 
 import paimon_cli as cli
@@ -38,6 +37,11 @@ async def button_handler(update: Update, context: ut.Context):
         elif query.data.startswith('abyss_menu'):
             args = query.data.split('_')
             await gui.abyss_menu(update, args[-2] == 'previous', args[-1])
+        elif query.data == 'notifications_menu':
+            await gui.notifications_menu(update)
+        elif query.data.startswith('notification_toggle'):
+            args = query.data.split('_')
+            await gui.notification_toggle(update, args[-1])
 
 
 def setup_handlers(application: ApplicationBuilder):
@@ -61,14 +65,10 @@ def setup_handlers(application: ApplicationBuilder):
         filters=~filters.UpdateType.EDITED_MESSAGE)
     application.add_handler(redeem_handler)
 
-    cancel_handler = CommandHandler(
-        'cancel', cli.cancel,
+    set_handler = CommandHandler(
+        'set', cli.set_value,
         filters=~filters.UpdateType.EDITED_MESSAGE)
-    application.add_handler(cancel_handler)
-
-    text_handler = MessageHandler(
-        filters.TEXT & ~filters.UpdateType.EDITED_MESSAGE, cli.text)
-    application.add_handler(text_handler)
+    application.add_handler(set_handler)
 
     application.add_handler(CallbackQueryHandler(button_handler))
 
@@ -82,6 +82,8 @@ if __name__ == '__main__':
         ut.set_up()
         application = ApplicationBuilder().token(
             ut.setting('token')).build()
+        application.job_queue.run_once(
+            ut.update_db, 5, name='Starting DB update')
         application.job_queue.run_once(
             ut.daily_checkin, 10, name='Starting daily claiming')
         setup_handlers(application)

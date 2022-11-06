@@ -10,7 +10,7 @@ Create a bot with [@BotFather](https://t.me/BotFather) and set the following com
 help - List of commands.
 menu - Interact with me using UI.
 redeem - Redeem the gift code.
-cancel - Cancel current action.
+set - Set resin/teapot/updates values.
 ```
 
 # Run
