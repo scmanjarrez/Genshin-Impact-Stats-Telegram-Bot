@@ -75,14 +75,14 @@ async def set_value(update: Update, context: ut.Context) -> None:
                                f"greater than 0 and lower than "
                                f"{ut.MAX_RESIN}.")
                 elif set_type == 'teapot':
-                    if 0 < value < db.teapot_max(uid):
+                    if 0 < value < db.teapot_max(uid) and not value % 30:
                         db.set_teapot(uid, value)
                         msg = (f"Teapot currency notification threshold "
                                f"has been updated to {value}.")
                     else:
                         msg = (f"Teapot currency notification threshold must "
-                               f"be greater than 0 and lower than "
-                               f"{db.teapot_max(uid)}.")
+                               f"be greater than 0, lower than "
+                               f"{db.teapot_max(uid)} and multiple of 30.")
                 elif set_type == 'updates':
                     if value > 0:
                         db.set_updates(uid, value)
