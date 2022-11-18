@@ -197,7 +197,7 @@ def _remove_job(queue: JobQueue, name: str) -> None:
             job.schedule_removal()
 
 
-async def updatedb_callback() -> None:
+async def updatedb_callback(context: Context = None) -> None:
     for uid in CLIENT:
         _, notes_data = await notes(uid)
         db.set_teapot_max(uid, notes_data.teapot_max)
@@ -207,7 +207,7 @@ async def update_db(context: Context) -> None:
     await updatedb_callback()
 
 
-async def daily_callback() -> None:
+async def daily_callback(context: Context = None) -> None:
     for uid, client in CLIENT.items():
         try:
             # reward = await client.claim_daily_reward()
