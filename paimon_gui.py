@@ -5,10 +5,10 @@
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from telegram import Update
 
-
+import database as db
 import utils as ut
 import calendar
 import datetime
@@ -31,7 +31,8 @@ async def main_menu(update: Update) -> None:
     await _answer(update)
     kb = [button([("🗒 Daily Notes 🗒", 'notes_menu')]),
           button([("📖 Traveler's Diary 📖", 'diary_month_menu')]),
-          button([("✨ Abyss ✨", 'abyss_seasons_menu')])]
+          button([("✨ Abyss ✨", 'abyss_seasons_menu')]),
+          button([("⚙️ Notifications ⚙️", 'notifications_menu')])]
     resp = ut.send
     if update.callback_query is not None:
         resp = ut.edit
@@ -40,25 +41,28 @@ async def main_menu(update: Update) -> None:
 
 async def notes_menu(update: Update, context: ut.Context) -> None:
     ut.autoupdate_notes(update, context)
-    msg, remaining, parametric = await ut.notes(ut.uid(update))
-    ut.notifier(update, context, remaining)
-    ut.notifier_parametric(update, context, parametric)
+    msg, notes_data = await ut.notes(ut.uid(update))
     await _answer(update)
+    ut.notifier_resin(update, context, notes_data.resin_time)
+    ut.notifier_teapot(update, context, notes_data)
+    ut.notifier_parametric(update, context, notes_data.parametric_time)
+    ut.notifier_expedition(update, context, notes_data.expeditions_max)
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
     await ut.edit(update, msg, InlineKeyboardMarkup(kb))
 
 
 async def update_notes(update: Update, context: ut.Context,
-                       data: Optional[
-                           Tuple[str, ut.TimeDelta, ut.TimeDelta]] = None
+                       data: Tuple[str, ut.Notes] = None
                        ) -> None:
     if data is None:
-        msg, remaining, parametric = await ut.notes(ut.uid(update))
+        msg, notes_data = await ut.notes(ut.uid(update))
     else:
-        msg, remaining, parametric = data
-    ut.notifier(update, context, remaining)
-    ut.notifier_parametric(update, context, parametric)
+        msg, notes_data = data
+    ut.notifier_resin(update, context, notes_data.resin_time)
+    ut.notifier_teapot(update, context, notes_data)
+    ut.notifier_parametric(update, context, notes_data.parametric_time)
+    ut.notifier_expedition(update, context, notes_data.expeditions_max)
     kb = [button([("🔃 Update 🔃", 'notes_menu')]),
           button([("« Back to Menu", 'main_menu')])]
     await ut.edit(update, msg, InlineKeyboardMarkup(kb))
@@ -124,3 +128,40 @@ async def abyss_menu(update: Update, previous: bool, floor: str) -> None:
                   ("« Back to Seasons", 'abyss_seasons_menu'),
                   ("« Back to Menu", 'main_menu')])]
     await ut.edit(update, msg, InlineKeyboardMarkup(kb))
+
+
+def notification_icon(value: int) -> str:
+    return '🔔' if value == 1 else '🔕'
+
+
+async def notifications_menu(update: Update) -> None:
+    await _answer(update)
+    uid = ut.uid(update)
+    kb = [button([(f"Resin ({db.resin(uid)}): "
+                   f"{notification_icon(db.resin_warn(uid))}",
+                   'notification_toggle_resin')]),
+          button([(f"Teapot Currency ({db.teapot(uid)}): "
+                   f"{notification_icon(db.teapot_warn(uid))}",
+                   'notification_toggle_teapot')]),
+          button([(f"Pt.Transformer: "
+                   f"{notification_icon(db.parametric_warn(uid))}",
+                   'notification_toggle_parametric')]),
+          button([(f"Expeditions: "
+                   f"{notification_icon(db.expedition_warn(uid))}",
+                   'notification_toggle_expedition')]),
+          button([("« Back to Menu", 'main_menu')])]
+    await ut.edit(update, "Notifications", InlineKeyboardMarkup(kb))
+
+
+async def notification_toggle(update: Update, toggle: str) -> None:
+    await _answer(update)
+    uid = ut.uid(update)
+    if toggle == 'resin':
+        db.toggle_resin_warn(uid)
+    elif toggle == 'teapot':
+        db.toggle_teapot_warn(uid)
+    elif toggle == 'parametric':
+        db.toggle_parametric_warn(uid)
+    elif toggle == 'expedition':
+        db.toggle_expedition_warn(uid)
+    await notifications_menu(update)

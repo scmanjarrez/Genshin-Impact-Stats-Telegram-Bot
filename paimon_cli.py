@@ -4,33 +4,29 @@
 # This work is licensed under the terms of the MIT license.
 
 from telegram import Update
+
 import paimon_gui as gui
+import database as db
 import utils as ut
 
 
-STATE = ut.CMD.NOP
 HELP = (
     "Hello Traveler, use the following commands to interact with me:"
     "\n\n"
 
     "❔ /menu - Interact with me using UI."
     "\n"
-    "❔ /redeem <code>[#]</code> - Redeem the gift code."
+    "❔ /redeem <code>code</code> - Redeem the gift code."
+    "\n"
+    "❔ /set <code>type</code> <code>value</code> - Set "
+    "<code>resin/teapot/updates</code> value. "
+    "Default resin: 150. Default teapot: 2200. Default updates: 240"
     "\n\n"
 
     "<b>Bot Usage</b>\n"
     "❔ /help - List of commands."
-    "\n"
-    "❔ /cancel - Cancel current action."
     "\n\n"
-
-    "<i><b>Note:</b> Arguments inside brackets are optional.</i>"
 )
-
-
-def _state(state: ut.CMD = ut.CMD.NOP) -> None:
-    global STATE
-    STATE = state
 
 
 def allowed(uid: str) -> bool:
@@ -55,34 +51,46 @@ async def redeem(update: Update, context: ut.Context) -> None:
         if context.args:
             msg = await ut.redeem(uid, context.args[0])
         else:
-            msg = "Tell me the gift code to redeem:"
-            _state(ut.CMD.GIFT)
+            msg = "Send the gift code to redeem, e.g. /redeem GENSHINGIFT"
         await ut.send(update, msg)
 
 
-async def text(update: Update, context: ut.Context) -> None:
+async def set_value(update: Update, context: ut.Context) -> None:
     uid = ut.uid(update)
     if allowed(uid):
-        msg = "❗ Send only one argument."
-        args = update.message.text.split()
-        if len(args) == 1:
-            if STATE == ut.CMD.GIFT:
-                msg = await ut.redeem(uid, args[0])
+        if context.args and len(context.args) == 2:
+            try:
+                value = int(context.args[1])
+            except ValueError:
+                msg = "Argument must be an integer."
             else:
-                _state(uid)
-        await ut.send(update, msg)
-
-
-async def cancel(update: Update, context: ut.Context) -> None:
-    uid = ut.uid(update)
-    if allowed(uid):
-        if STATE != ut.CMD.NOP:
-            msg = (f"The command <code>{STATE.value}</code> "
-                   f"has been cancelled. Anything else I can do for you?"
-                   f"\n\n"
-                   f"Send /help for a list of commands.")
-            _state()
+                set_type = context.args[0]
+                if set_type == 'resin':
+                    if 0 < value < ut.MAX_RESIN:
+                        db.set_resin(uid, value)
+                        msg = (f"Resin notification threshold "
+                               f"has been updated to {value}.")
+                    else:
+                        msg = (f"Resin notification threshold must be "
+                               f"greater than 0 and lower than "
+                               f"{ut.MAX_RESIN}.")
+                elif set_type == 'teapot':
+                    if 0 < value < db.teapot_max(uid) and not value % 30:
+                        db.set_teapot(uid, value)
+                        msg = (f"Teapot currency notification threshold "
+                               f"has been updated to {value}.")
+                    else:
+                        msg = (f"Teapot currency notification threshold must "
+                               f"be greater than 0, lower than "
+                               f"{db.teapot_max(uid)} and multiple of 30.")
+                elif set_type == 'updates':
+                    if value > 0:
+                        db.set_updates(uid, value)
+                        msg = f"Updates interval has been updated to {value}."
+                    else:
+                        msg = "Updates interval must be greater than 0."
         else:
-            msg = ("No active command to cancel. "
-                   "I wasn't doing anything anyway.\nZzzzz...")
+            msg = ("Send the type and value to be set: "
+                   "resin, teapot or update, e.g. /set resin 120, "
+                   "/set teapot 200")
         await ut.send(update, msg)
