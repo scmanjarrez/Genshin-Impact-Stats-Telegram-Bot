@@ -11,6 +11,7 @@ help - List of commands.
 menu - Interact with me using UI.
 redeem - Redeem the gift code.
 set - Set resin/teapot/updates values.
+get - Get resin/teapot/updates values.
 ```
 
 # Run

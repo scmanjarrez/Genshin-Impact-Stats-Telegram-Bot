@@ -70,6 +70,11 @@ def setup_handlers(application: ApplicationBuilder):
         filters=~filters.UpdateType.EDITED_MESSAGE)
     application.add_handler(set_handler)
 
+    get_handler = CommandHandler(
+        'get', cli.get_value,
+        filters=~filters.UpdateType.EDITED_MESSAGE)
+    application.add_handler(get_handler)
+
     application.add_handler(CallbackQueryHandler(button_handler))
 
 

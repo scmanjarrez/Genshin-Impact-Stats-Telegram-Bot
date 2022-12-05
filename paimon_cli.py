@@ -21,6 +21,9 @@ HELP = (
     "❔ /set <code>type</code> <code>value</code> - Set "
     "<code>resin/teapot/updates</code> value. "
     "Default resin: 150. Default teapot: 2200. Default updates (minutes): 240"
+    "\n"
+    "❔ /get <code>type</code> - Get "
+    "<code>resin/teapot/updates</code> current value."
     "\n\n"
 
     "<b>Bot Usage</b>\n"
@@ -91,6 +94,26 @@ async def set_value(update: Update, context: ut.Context) -> None:
                         msg = "Updates interval must be greater than 0."
         else:
             msg = ("Send the type and value to be set: "
-                   "resin, teapot or update, e.g. /set resin 120, "
-                   "/set teapot 200")
+                   "resin, teapot or updates, e.g. /set resin 120, "
+                   "/set updates 720")
+        await ut.send(update, msg)
+
+
+async def get_value(update: Update, context: ut.Context) -> None:
+    uid = ut.uid(update)
+    if allowed(uid):
+        if context.args and len(context.args) == 1:
+            get_type = context.args[0]
+            if get_type == 'resin':
+                msg = (f"Current resin notification threshold "
+                       f"set to {db.resin(uid)}.")
+            elif get_type == 'teapot':
+                msg = (f"Current teapot currency notification threshold "
+                       f"set to {db.teapot(uid)}.")
+            elif get_type == 'updates':
+                msg = (f"Current updates interval set to {db.updates(uid)}.")
+        else:
+            msg = ("Send the type to retrieve: "
+                   "resin, teapot or updates, e.g. /get resin, "
+                   "/get updates")
         await ut.send(update, msg)
