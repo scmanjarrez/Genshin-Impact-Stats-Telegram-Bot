@@ -20,7 +20,7 @@ HELP = (
     "\n"
     "❔ /set <code>type</code> <code>value</code> - Set "
     "<code>resin/teapot/updates</code> value. "
-    "Default resin: 150. Default teapot: 2200. Default updates: 240"
+    "Default resin: 150. Default teapot: 2200. Default updates (minutes): 240"
     "\n\n"
 
     "<b>Bot Usage</b>\n"
