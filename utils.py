@@ -325,16 +325,17 @@ async def notify_parametric(context: Context) -> None:
 def notifier_parametric(update: Update, context: Context,
                         parametric: TimeDelta) -> None:
     queue = context.job_queue
-    if db.parametric_warn(uid(update)) == 1:
-        noti = False
-        if not queue.get_jobs_by_name(f'parametric_{uid(update)}'):
-            if parametric.days:
-                parametric = TimeDelta(days=parametric.days+1)
-                noti = True
-            if noti or parametric.seconds:
-                queue.run_once(
-                    notify_parametric, parametric,
-                    name=f'parametric_{uid(update)}', data=update)
+    if parametric is not None:
+        if db.parametric_warn(uid(update)) == 1:
+            noti = False
+            if not queue.get_jobs_by_name(f'parametric_{uid(update)}'):
+                if parametric.days:
+                    parametric = TimeDelta(days=parametric.days+1)
+                    noti = True
+                if noti or parametric.seconds:
+                    queue.run_once(
+                        notify_parametric, parametric,
+                        name=f'parametric_{uid(update)}', data=update)
 
 
 async def notify_expedition(context: Context) -> None:
