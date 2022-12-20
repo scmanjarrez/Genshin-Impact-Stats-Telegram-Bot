@@ -1,8 +1,9 @@
 # Description
-Telegram Bot to track real-time stats of Genshin Impact. <b>Still in development</b>.
+Telegram Bot to track real-time stats of Genshin Impact.
 
 # Requirements
 - python
+- sqlite3
 
 # BotFather set up
 Create a bot with [@BotFather](https://t.me/BotFather) and set the following commands:
