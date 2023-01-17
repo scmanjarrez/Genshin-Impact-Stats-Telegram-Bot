@@ -215,6 +215,8 @@ async def daily_callback(context: Context = None) -> None:
         except genshin.AlreadyClaimed:
             # print(f"INFO: Daily already claimed: {uid}")
             pass
+        except genshin.errors.InvalidCookies:
+            pass
         else:
             # print(f"INFO: Claimed {reward.amount}x {reward.name}")
             pass
@@ -365,6 +367,8 @@ async def redeem(uid: str, code: str) -> None:
         await CLIENT[uid].redeem_code(code)
     except genshin.errors.RedemptionException as e:
         msg = e.msg
+    except genshin.errors.InvalidCookies:
+        msg = "Invalid cookies. Check config file."
     else:
         msg = "Code redeemed successfully."
     return msg
