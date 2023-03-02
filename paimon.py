@@ -93,15 +93,21 @@ if __name__ == '__main__':
             ut.daily_checkin, 10, name='Starting daily claiming')
         setup_handlers(application)
 
-        application.run_webhook(
-            listen=ut.setting('listen'),
-            port=ut.setting('port'),
-            url_path=ut.setting('token'),
-            cert=ut.setting('cert'),
-            webhook_url=(f"https://"
-                         f"{ut.setting('ip')}/"
-                         f"{ut.setting('token')}")
-        )
-        # application.run_polling()
+        try:
+            if ut.setting('webhook'):
+                application.run_webhook(
+                    listen=ut.setting('listen'),
+                    port=ut.setting('port'),
+                    url_path=ut.setting('token'),
+                    cert=ut.setting('cert'),
+                    webhook_url=(f"https://"
+                                 f"{ut.setting('ip')}/"
+                                 f"{ut.setting('token')}")
+                )
+            else:
+                application.run_polling()
+        except KeyError:
+            logging.error(f"New setting 'webhook' required "
+                          f"in {ut.CONF_FILE}. Check README for more info.")
     else:
-        print(f"File {ut.CONF_FILE} not found.")
+        logging.error(f"File {ut.CONF_FILE} not found.")
