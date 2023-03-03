@@ -3,17 +3,16 @@
 # Copyright (c) 2021-2023 scmanjarrez. All rights reserved.
 # This work is licensed under the terms of the MIT license.
 
-from telegram import Update
+import database as db
 
 import paimon_gui as gui
-import database as db
 import utils as ut
+from telegram import Update
 
 
 HELP = (
     "Hello Traveler, use the following commands to interact with me:"
     "\n\n"
-
     "❔ /menu - Interact with me using UI."
     "\n"
     "❔ /redeem <code>code</code> - Redeem the gift code."
@@ -25,7 +24,6 @@ HELP = (
     "❔ /get <code>type</code> - Get "
     "<code>resin/teapot/updates</code> current value."
     "\n\n"
-
     "<b>Bot Usage</b>\n"
     "❔ /help - List of commands."
     "\n\n"
@@ -68,34 +66,44 @@ async def set_value(update: Update, context: ut.Context) -> None:
                 msg = "Argument must be an integer."
             else:
                 set_type = context.args[0]
-                if set_type == 'resin':
+                if set_type == "resin":
                     if 0 < value < ut.MAX_RESIN:
                         db.set_resin(uid, value)
-                        msg = (f"Resin notification threshold "
-                               f"has been updated to {value}.")
+                        msg = (
+                            f"Resin notification threshold "
+                            f"has been updated to {value}."
+                        )
                     else:
-                        msg = (f"Resin notification threshold must be "
-                               f"greater than 0 and lower than "
-                               f"{ut.MAX_RESIN}.")
-                elif set_type == 'teapot':
+                        msg = (
+                            f"Resin notification threshold must be "
+                            f"greater than 0 and lower than "
+                            f"{ut.MAX_RESIN}."
+                        )
+                elif set_type == "teapot":
                     if 0 < value < db.teapot_max(uid) and not value % 30:
                         db.set_teapot(uid, value)
-                        msg = (f"Teapot currency notification threshold "
-                               f"has been updated to {value}.")
+                        msg = (
+                            f"Teapot currency notification threshold "
+                            f"has been updated to {value}."
+                        )
                     else:
-                        msg = (f"Teapot currency notification threshold must "
-                               f"be greater than 0, lower than "
-                               f"{db.teapot_max(uid)} and multiple of 30.")
-                elif set_type == 'updates':
+                        msg = (
+                            f"Teapot currency notification threshold must "
+                            f"be greater than 0, lower than "
+                            f"{db.teapot_max(uid)} and multiple of 30."
+                        )
+                elif set_type == "updates":
                     if value > 0:
                         db.set_updates(uid, value)
                         msg = f"Updates interval has been updated to {value}."
                     else:
                         msg = "Updates interval must be greater than 0."
         else:
-            msg = ("Send the type and value to be set: "
-                   "resin, teapot or updates, e.g. /set resin 120, "
-                   "/set updates 720")
+            msg = (
+                "Send the type and value to be set: "
+                "resin, teapot or updates, e.g. /set resin 120, "
+                "/set updates 720"
+            )
         await ut.send(update, msg)
 
 
@@ -104,16 +112,22 @@ async def get_value(update: Update, context: ut.Context) -> None:
     if allowed(uid):
         if context.args and len(context.args) == 1:
             get_type = context.args[0]
-            if get_type == 'resin':
-                msg = (f"Current resin notification threshold "
-                       f"set to {db.resin(uid)}.")
-            elif get_type == 'teapot':
-                msg = (f"Current teapot currency notification threshold "
-                       f"set to {db.teapot(uid)}.")
-            elif get_type == 'updates':
-                msg = (f"Current updates interval set to {db.updates(uid)}.")
+            if get_type == "resin":
+                msg = (
+                    f"Current resin notification threshold "
+                    f"set to {db.resin(uid)}."
+                )
+            elif get_type == "teapot":
+                msg = (
+                    f"Current teapot currency notification threshold "
+                    f"set to {db.teapot(uid)}."
+                )
+            elif get_type == "updates":
+                msg = f"Current updates interval set to {db.updates(uid)}."
         else:
-            msg = ("Send the type to retrieve: "
-                   "resin, teapot or updates, e.g. /get resin, "
-                   "/get updates")
+            msg = (
+                "Send the type to retrieve: "
+                "resin, teapot or updates, e.g. /get resin, "
+                "/get updates"
+            )
         await ut.send(update, msg)
