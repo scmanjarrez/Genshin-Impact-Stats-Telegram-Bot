@@ -19,6 +19,9 @@ get - Get resin/teapot/updates values.
 - Install python dependencies.
 
     `pip install -r requirements.txt`
+    > If you want to contribute, install also development dependencies.
+    >
+    >    `pip install -r dev_requirements.txt`
 
 - Create a self-signed certificate in order to communicate with telegram server
   using SSL.
@@ -68,11 +71,38 @@ get - Get resin/teapot/updates values.
     > **Note:** If you run the bot in port 80, it may be needed to run the bot as
     > superuser (**sudo**).
 
+
 # Contributing
 Happy to see you willing to make the project better. In order to make a contribution,
 please respect the following format:
 - Imports sorted with usort: `usort format <file>`
 - Code formatted with black (line lenght 79): `black -l 79 <file>`
+
+> If you are using flake8, ignore E203 in .flake8
+> ```
+> [flake8]
+> extend-ignore = E203
+> ```
+
+### VSCode project settings
+VSCode should have the following settings in settings.json:
+```
+{
+    "python.analysis.fixAll": [],
+    "python.formatting.blackArgs": [
+        "-l 79"
+    ],
+    "python.formatting.provider": "black",
+    "isort.path": [
+        "usort format"
+    ],
+}
+```
+> ```
+> "python.linting.flake8Args": [
+>     "--ignore=E203",
+> ],
+> ```
 
 > If you are using flake8, ignore E203 warning.
 
