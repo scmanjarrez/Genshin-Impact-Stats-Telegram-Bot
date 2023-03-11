@@ -37,6 +37,17 @@ Floors = List[genshin.models.genshin.chronicle.abyss.Floor]
 Battles = List[genshin.models.genshin.chronicle.abyss.Battle]
 Stats = genshin.models.genshin.chronicle.abyss.CharacterRanks
 StatChars = List[genshin.models.genshin.chronicle.abyss.AbyssRankCharacter]
+LOG_FILT = ["Removed job", "Added job", "Job", "Running job"]
+
+
+class NoLog(logging.Filter):
+    def filter(self, record):
+        logged = True
+        for lf in LOG_FILT:
+            if lf in record.getMessage():
+                logged = False
+                break
+        return logged
 
 
 class CMD(Enum):

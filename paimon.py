@@ -87,6 +87,9 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         level=logging.INFO,
     )
+    logging.getLogger("apscheduler.executors.default").addFilter(ut.NoLog())
+    logging.getLogger("apscheduler.scheduler").addFilter(ut.NoLog())
+
     if os.path.isfile(ut.CONF_FILE):
         ut.set_up()
         application = ApplicationBuilder().token(ut.setting("token")).build()
