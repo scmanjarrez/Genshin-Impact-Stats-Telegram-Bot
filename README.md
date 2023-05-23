@@ -63,6 +63,7 @@ get - Get resin/teapot/updates values.
     > - **ltuid**: [hoyolab.com](https://www.hoyolab.com/genshin) uid
     > - **ctoken**: cookie_token from [genshin.hoyoverse.com](https://genshin.hoyoverse.com/en/gift)
     > - **uid**: account_id from [genshin.hoyoverse.com](https://genshin.hoyoverse.com/en/gift)
+    > - **stoken**: stoken to renew cookie_token (obtained using [`client.login_with_password`](https://thesadru.github.io/genshin.py/authentication#example))
 
 
 - Execute the bot.

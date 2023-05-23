@@ -16,6 +16,7 @@ import genshin
 
 import paimon_gui as gui
 import pytz
+import aiohttp
 from telegram import Bot, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
@@ -412,13 +413,62 @@ def last_updated() -> str:
     )
 
 
-async def redeem(uid: str, code: str) -> None:
+async def redeem(uid: str, code: str) -> str:
     try:
         await CLIENT[uid].redeem_code(code)
     except genshin.errors.RedemptionException as e:
         msg = e.msg
     except genshin.errors.InvalidCookies:
-        msg = "Invalid cookies. Check config file."
+        try:
+            stoken = account(uid, "stoken")
+        except KeyError:
+            msg = "Invalid cookies. Check config file."
+        else:
+            if stoken:
+                ltuid = account(uid, "ltuid")
+                headers = {
+                    "x-rpc-app_version": "2.11.2",
+                    "User-Agent": (
+                        "Mozilla/5.0 (iPhone; CPU iPhone OS "
+                        "13_2_3 like Mac OS X) AppleWebKit/"
+                        "605.1.15 (KHTML, like Gecko) "
+                        "miHoYoBBS/2.11.1"
+                    ),
+                    "x-rpc-client_type": "5",
+                    "Referer": "https://webstatic.mihoyo.com/",
+                    "Origin": "https://webstatic.mihoyo.com",
+                    "Cookie": f"stuid={ltuid};stoken={stoken}",
+                }
+                params = {"uid": ltuid, "stoken": stoken}
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(
+                                "https://api-account-os.hoyolab.com/"
+                                "account/auth/api/"
+                                "getCookieAccountInfoBySToken",
+                                params=params,
+                                headers=headers
+                        ) as res:
+                            data = json.loads(await res.text())
+                            cookie_token = data["data"]["cookie_token"]
+                            CONFIG["accounts"][uid]["ctoken"] = cookie_token
+                            with open(CONF_FILE, 'w') as f:
+                                json.dump(CONFIG, f, indent=2)
+                            del CLIENT[uid]
+                            CLIENT[uid] = genshin.Client(
+                                {
+                                    "ltoken": account(uid, "ltoken"),
+                                    "ltuid": account(uid, "ltuid"),
+                                    "account_id": account(uid, "ltuid"),
+                                    "cookie_token": cookie_token,
+                                }
+                            )
+                            CLIENT[uid].default_game = "genshin"
+                            msg = await redeem(uid, code)
+                except aiohttp.web.HTTPException:
+                    msg = "Could not renew cookie_token using stoken."
+            else:
+                msg = "Could not redeem cookie_token because stoken is empty."
     else:
         msg = "Code redeemed successfully."
     return msg
