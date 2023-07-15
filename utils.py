@@ -11,12 +11,13 @@ import traceback
 from enum import Enum
 from typing import List, Tuple, Union
 
+import aiohttp
+
 import database as db
 import genshin
 
 import paimon_gui as gui
 import pytz
-import aiohttp
 from telegram import Bot, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
@@ -38,7 +39,14 @@ Floors = List[genshin.models.genshin.chronicle.abyss.Floor]
 Battles = List[genshin.models.genshin.chronicle.abyss.Battle]
 Stats = genshin.models.genshin.chronicle.abyss.CharacterRanks
 StatChars = List[genshin.models.genshin.chronicle.abyss.AbyssRankCharacter]
-LOG_FILT = ["Removed job", "Added job", "Job", "Running job"]
+LOG_FILT = [
+    "Removed job",
+    "Added job",
+    "Job",
+    "Running job",
+    "message=",
+    "HTTP Request",
+]
 
 
 class NoLog(logging.Filter):
@@ -443,16 +451,16 @@ async def redeem(uid: str, code: str) -> str:
                 try:
                     async with aiohttp.ClientSession() as session:
                         async with session.post(
-                                "https://api-account-os.hoyolab.com/"
-                                "account/auth/api/"
-                                "getCookieAccountInfoBySToken",
-                                params=params,
-                                headers=headers
+                            "https://api-account-os.hoyolab.com/"
+                            "account/auth/api/"
+                            "getCookieAccountInfoBySToken",
+                            params=params,
+                            headers=headers,
                         ) as res:
                             data = json.loads(await res.text())
                             cookie_token = data["data"]["cookie_token"]
                             CONFIG["accounts"][uid]["ctoken"] = cookie_token
-                            with open(CONF_FILE, 'w') as f:
+                            with open(CONF_FILE, "w") as f:
                                 json.dump(CONFIG, f, indent=2)
                             del CLIENT[uid]
                             CLIENT[uid] = genshin.Client(
@@ -508,11 +516,11 @@ async def notes(uid: str) -> Tuple[str, Notes]:
 
 def fmt_exp_chars(characters: ExpChars) -> str:
     exp = [
-        f"    - {chr.character.name} => "
+        f"    - Character {idx} => "
         f"<code>"
         f"{chr.remaining_time if not chr.finished else 'Finished'}"
         f"</code>\n"
-        for chr in characters
+        for idx, chr in enumerate(characters, 1)
     ]
     return "".join(exp)
 
