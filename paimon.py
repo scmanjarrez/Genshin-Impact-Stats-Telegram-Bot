@@ -97,9 +97,9 @@ if __name__ == "__main__":
         application.job_queue.run_once(
             ut.update_db, 5, name="Starting DB update"
         )
-        application.job_queue.run_once(
-            ut.daily_checkin, 10, name="Starting daily claiming"
-        )
+        # application.job_queue.run_once(
+        #     ut.daily_checkin, 10, name="Starting daily claiming"
+        # )
         setup_handlers(application)
 
         try:
