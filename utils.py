@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-# Copyright (c) 2021-2023 scmanjarrez. All rights reserved.
+# Copyright (c) 2021-2024 scmanjarrez. All rights reserved.
 # This work is licensed under the terms of the MIT license.
 
 import calendar
