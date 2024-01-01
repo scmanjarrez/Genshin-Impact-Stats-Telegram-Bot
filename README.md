@@ -108,7 +108,7 @@ VSCode should have the following settings in settings.json:
 > If you are using flake8, ignore E203 warning.
 
 # License
-    Copyright (c) 2021-2023 scmanjarrez. All rights reserved.
+    Copyright (c) 2021-2024 scmanjarrez. All rights reserved.
     This work is licensed under the terms of the MIT license.
 
 For a copy, see
