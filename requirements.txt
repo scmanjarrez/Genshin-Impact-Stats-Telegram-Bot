@@ -13,7 +13,7 @@ genshin @ git+https://github.com/thesadru/genshin.py.git@a1ec09c4147cbb881ec1edf
 h11==0.12.0
 httpcore==0.15.0
 httpx==0.23.0
-idna==3.3
+idna==3.7
 multidict==6.0.2
 pydantic==1.9.2
 python-telegram-bot==20.0a2
